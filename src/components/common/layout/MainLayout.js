@@ -1,31 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TopNav from './TopNav';
 import SideNav from './SideNav';
 import Footer from './Footer';
 import PageHeader from './PageHeader';
+import CreateOrganization from '../../organizations/CreateOrganization';
+import JoinOrganization from '../../organizations/JoinOrganization';
 
 const MainLayout = ({ 
   children, 
   tabs, 
   activeTab, 
-  onTabChange, 
   subTabs, 
   activeSubTab, 
-  onSubTabChange, 
   showSideNav = true,
-  onCreateOrganization,
-  onJoinOrganization,
   title,
-  subtitle,
-  notificationModalOpen,
-  setNotificationModalOpen
+  subtitle
 }) => {
+  const [showCreateOrg, setShowCreateOrg] = useState(false);
+  const [showJoinOrg, setShowJoinOrg] = useState(false);
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
+
+  const handleOrganizationCreated = (organization) => {
+    setShowCreateOrg(false);
+    setShowJoinOrg(false);
+    // The AuthContext will handle updating the current organization
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <TopNav 
-        onTabChange={onTabChange} 
-        onCreateOrganization={onCreateOrganization}
-        onJoinOrganization={onJoinOrganization}
         notificationModalOpen={notificationModalOpen}
         setNotificationModalOpen={setNotificationModalOpen}
       />
@@ -35,10 +38,8 @@ const MainLayout = ({
           <SideNav 
             tabs={tabs}
             activeTab={activeTab}
-            onTabChange={onTabChange}
             subTabs={subTabs}
             activeSubTab={activeSubTab}
-            onSubTabChange={onSubTabChange}
           />
         )}
         
@@ -53,6 +54,20 @@ const MainLayout = ({
           <Footer />
         </div>
       </div>
+
+      {/* Organization Modals */}
+      {showCreateOrg && (
+        <CreateOrganization
+          onSuccess={handleOrganizationCreated}
+          onCancel={() => setShowCreateOrg(false)}
+        />
+      )}
+      {showJoinOrg && (
+        <JoinOrganization
+          onSuccess={handleOrganizationCreated}
+          onCancel={() => setShowJoinOrg(false)}
+        />
+      )}
     </div>
   );
 };

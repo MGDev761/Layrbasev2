@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Popover } from '@headlessui/react';
 import { 
   BellIcon, 
-  UserCircleIcon,
-  PlusCircleIcon,
-  ArrowUpIcon,
-  ArrowRightOnRectangleIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotifications } from '../../../contexts/NotificationContext';
@@ -16,12 +11,10 @@ import NotificationModal from './NotificationModal';
 import logo from '../../../assets/logopurple2.png';
 
 const TopNav = ({ 
-  onTabChange, 
-  onCreateOrganization, 
-  onJoinOrganization,
   notificationModalOpen,
   setNotificationModalOpen
 }) => {
+  const navigate = useNavigate();
   const [feedbackText, setFeedbackText] = useState('');
   const { user, userProfile, signOut } = useAuth();
   const { unreadCount } = useNotifications();
@@ -43,7 +36,7 @@ const TopNav = ({
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <button onClick={() => onTabChange('dashboard')} className="flex items-center">
+              <button onClick={() => navigate('/dashboard')} className="flex items-center">
                 <img src={logo} alt="LayrBase" className="h-6 w-auto" />
               </button>
             </div>
@@ -136,7 +129,7 @@ const TopNav = ({
                   
                   <div className="space-y-1 py-1">
                     <button className="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                      onClick={() => onTabChange('myorgs')}
+                      onClick={() => navigate('/myorgs')}
                     >
                       My Organizations
                     </button>

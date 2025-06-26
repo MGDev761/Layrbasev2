@@ -1,14 +1,11 @@
 import React from 'react';
-import Budget from './components/budget/Budget';
 import Overview from './components/Overview';
 
-const Finance = ({ activeSubTab }) => {
+const Finance = ({ activeSubTab, onSubTabChange }) => {
   const renderContent = () => {
     switch (activeSubTab) {
       case 'overview':
         return <Overview />;
-      case 'budget':
-        return <Budget />;
       case 'invoicing':
         return (
           <div className="space-y-6">

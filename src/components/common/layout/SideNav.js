@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { ChevronDownIcon, ChevronRightIcon, PlusIcon, UserPlusIcon } from '@heroicons/react/20/solid';
 import { Popover } from '@headlessui/react';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -8,15 +9,14 @@ import JoinOrganization from '../../organizations/JoinOrganization';
 const SideNav = ({ 
   tabs, 
   activeTab, 
-  onTabChange, 
   subTabs, 
-  activeSubTab, 
-  onSubTabChange 
+  activeSubTab
 }) => {
+  const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState([activeTab]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const { organizations, currentOrganization, setCurrentOrganization, createOrganization, joinOrganization, refreshOrganizations } = useAuth();
+  const { organizations, currentOrganization, setCurrentOrganization, refreshOrganizations } = useAuth();
 
   const toggleSection = (tabId) => {
     setExpandedSections(prev => 
@@ -27,7 +27,22 @@ const SideNav = ({
   };
 
   const handleTabClick = (tabId) => {
-    onTabChange(tabId);
+    console.log('handleTabClick called with', tabId);
+    // Navigate to the main section with default sub-tab
+    const defaultSubTabs = {
+      company: 'foundation',
+      finance: 'overview',
+      legal: 'contracts',
+      captable: 'captable',
+      marketing: 'events',
+      sales: 'crm',
+      hr: 'employees',
+    };
+    const defaultSubTab = defaultSubTabs[tabId];
+    const newPath = defaultSubTab ? `/${tabId}/${defaultSubTab}` : `/${tabId}`;
+    console.log('Navigating to', newPath);
+    navigate(newPath);
+    
     if (!expandedSections.includes(tabId)) {
       setExpandedSections(prev => [...prev, tabId]);
     }
@@ -39,20 +54,6 @@ const SideNav = ({
     } else {
       handleTabClick(tabId);
     }
-  };
-
-  const handleSubTabClick = (subTabId) => {
-    // First ensure the parent tab is active
-    const parentTab = Object.keys(sectionSubsections).find(tabId => 
-      sectionSubsections[tabId].some(sub => sub.id === subTabId)
-    );
-    
-    if (parentTab && parentTab !== activeTab) {
-      onTabChange(parentTab);
-    }
-    
-    // Then set the sub-tab
-    onSubTabChange(subTabId);
   };
 
   // Define subsections for each main tab
@@ -212,17 +213,18 @@ const SideNav = ({
               {isExpanded && hasSubsections && (
                 <div className="bg-gray-50 border-l-2 border-gray-200">
                   {sectionSubsections[tab.id].map((subsection) => (
-                    <button
+                    <Link
                       key={subsection.id}
-                      onClick={() => handleSubTabClick(subsection.id)}
+                      to={`/${tab.id}/${subsection.id}`}
                       className={`w-full flex items-center px-8 py-2 text-left text-sm transition-colors ${
                         activeSubTab === subsection.id
                           ? 'text-purple-700 bg-purple-50'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
+                      style={{ textDecoration: 'none' }}
                     >
                       {subsection.name}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -235,7 +237,7 @@ const SideNav = ({
         
         {/* Marketplace Link */}
         <button
-          onClick={() => onTabChange('marketplace')}
+          onClick={() => navigate('/marketplace')}
           className={`w-full flex items-center px-4 py-3 text-left text-sm font-medium transition-colors ${
             activeTab === 'marketplace'
               ? 'bg-purple-50 text-purple-700 border-r-2 border-purple-500'

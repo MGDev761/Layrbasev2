@@ -4,6 +4,7 @@ import { getCompanyProfile } from '../../services/legalService';
 import { getUpcomingMarketingEvents } from '../../services/marketingService';
 import { getRecentActivities } from '../../services/salesService';
 import { fetchHolidays } from '../../services/holidaysService';
+import { useBudget } from '../../hooks/useBudget';
 import { 
   CheckCircleIcon, 
   ExclamationTriangleIcon, 
@@ -30,9 +31,12 @@ const getIcon = (type) => {
   }
 };
 
-const Dashboard = ({ notificationModalOpen, setNotificationModalOpen }) => {
+const Dashboard = () => {
   const { currentOrganization } = useAuth();
   const { notifications } = useNotifications();
+  const { totals: budgetTotals, loading: budgetLoading } = useBudget({ isForecast: false });
+  const { totals: forecastTotals, loading: forecastLoading } = useBudget({ isForecast: true });
+  const monthIndex = new Date().getMonth(); // 0-based
   const [companyProfile, setCompanyProfile] = useState(null);
   const [marketingEvents, setMarketingEvents] = useState([]);
   const [salesActivities, setSalesActivities] = useState([]);
@@ -76,11 +80,44 @@ const Dashboard = ({ notificationModalOpen, setNotificationModalOpen }) => {
     fetchData();
   }, [currentOrganization]);
 
+  console.log('budgetTotals', budgetTotals);
+  console.log('forecastTotals', forecastTotals);
+  console.log('monthIndex', monthIndex);
+  console.log('Rendering Revenue:', {
+    forecast: forecastTotals?.revenue?.[monthIndex],
+    budget: budgetTotals?.revenue?.[monthIndex],
+    allForecast: forecastTotals?.revenue,
+    allBudget: budgetTotals?.revenue,
+    monthIndex
+  });
+
   const financialMetrics = [
-    { name: 'Revenue', value: '$2.4M', change: '+12%', changeType: 'positive' },
-    { name: 'Cash', value: '$850K', change: '-5%', changeType: 'negative' },
-    { name: 'Monthly Costs', value: '$180K', change: '+8%', changeType: 'negative' },
-    { name: 'Runway', value: '4.7 months', change: '-0.3', changeType: 'negative' },
+    {
+      name: 'Revenue',
+      value: (forecastTotals?.revenue?.[monthIndex] ?? 0),
+      subValue: (budgetTotals?.revenue?.[monthIndex] ?? 0),
+      change: '',
+      changeType: 'positive'
+    },
+    { 
+      name: 'Cash Flow', 
+      value: 'set-up-cashflow', 
+      change: '', 
+      changeType: 'neutral' 
+    },
+    { 
+      name: 'Monthly Costs', 
+      value: (forecastTotals?.expense?.[monthIndex] ?? 0),
+      subValue: (budgetTotals?.expense?.[monthIndex] ?? 0),
+      change: '', 
+      changeType: 'negative' 
+    },
+    { 
+      name: 'Runway', 
+      value: 'set-up-cashflow', 
+      change: '', 
+      changeType: 'neutral' 
+    },
   ];
 
   const upcomingReleases = [
@@ -115,7 +152,7 @@ const Dashboard = ({ notificationModalOpen, setNotificationModalOpen }) => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
           <button
-            onClick={() => setNotificationModalOpen(true)}
+            onClick={() => setShowNotificationModal(true)}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             View all →
@@ -236,25 +273,62 @@ const Dashboard = ({ notificationModalOpen, setNotificationModalOpen }) => {
                 {financialMetrics.map((metric, i) => (
                   <div key={metric.name} className="flex flex-col items-start justify-center p-3">
                     <p className="text-sm font-medium text-gray-600 mb-1">{metric.name}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
-                      <div className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        metric.changeType === 'positive' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {metric.changeType === 'positive' ? (
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+                    {metric.value === 'set-up-cashflow' ? (
+                      <a href="/finance" className="w-full bg-gray-100 hover:bg-gray-200 rounded-lg p-3 flex items-center justify-center transition-colors">
+                        <div className="text-center">
+                          <svg className="w-6 h-6 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
-                        ) : (
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clipRule="evenodd" />
+                          <p className="text-xs text-gray-600 font-medium">Set up cashflow analysis</p>
+                        </div>
+                      </a>
+                    ) : metric.value === 0 ? (
+                      <a href="/finance" className="w-full bg-gray-100 hover:bg-gray-200 rounded-lg p-3 flex items-center justify-center transition-colors">
+                        <div className="text-center">
+                          <svg className="w-6 h-6 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                           </svg>
-                        )}
-                        {metric.change}
-                      </div>
-                    </div>
+                          <p className="text-xs text-gray-600 font-medium">Set up budget analysis</p>
+                        </div>
+                      </a>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <p className="text-2xl font-bold text-gray-900">
+                            {(forecastLoading || budgetLoading)
+                              ? <span>Loading...</span>
+                              : ((metric.value !== null && metric.value !== undefined) || (metric.subValue !== null && metric.subValue !== undefined)) ? (
+                                <>
+                                  <span>£{metric.value !== null && metric.value !== undefined ? metric.value.toLocaleString() : ''}</span>
+                                  <div className="text-xs text-gray-500">
+                                    vs Budget: £{metric.subValue !== null && metric.subValue !== undefined ? metric.subValue.toLocaleString() : ''}
+                                  </div>
+                                </>
+                              ) : (
+                                <span>Loading...</span>
+                              )}
+                          </p>
+                          {metric.changeType !== 'neutral' && (
+                            <div className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              metric.changeType === 'positive' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {metric.changeType === 'positive' ? (
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                              {metric.change}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
