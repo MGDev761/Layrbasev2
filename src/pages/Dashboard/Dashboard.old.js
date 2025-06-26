@@ -97,7 +97,8 @@ const Dashboard = () => {
       value: (forecastTotals?.revenue?.[monthIndex] ?? 0),
       subValue: (budgetTotals?.revenue?.[monthIndex] ?? 0),
       change: '',
-      changeType: 'positive'
+      changeType: (forecastTotals?.revenue?.[monthIndex] ?? 0) > (budgetTotals?.revenue?.[monthIndex] ?? 0) ? 'positive' : 
+                  (forecastTotals?.revenue?.[monthIndex] ?? 0) < (budgetTotals?.revenue?.[monthIndex] ?? 0) ? 'negative' : 'neutral'
     },
     { 
       name: 'Cash Flow', 
@@ -110,7 +111,8 @@ const Dashboard = () => {
       value: (forecastTotals?.expense?.[monthIndex] ?? 0),
       subValue: (budgetTotals?.expense?.[monthIndex] ?? 0),
       change: '', 
-      changeType: 'negative' 
+      changeType: (forecastTotals?.expense?.[monthIndex] ?? 0) < (budgetTotals?.expense?.[monthIndex] ?? 0) ? 'positive' : 
+                  (forecastTotals?.expense?.[monthIndex] ?? 0) > (budgetTotals?.expense?.[monthIndex] ?? 0) ? 'negative' : 'neutral'
     },
     { 
       name: 'Runway', 

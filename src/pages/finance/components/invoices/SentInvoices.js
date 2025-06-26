@@ -1,0 +1,324 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  DocumentArrowDownIcon,
+  PaperAirplaneIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
+import { invoiceService } from '../../../../services/invoiceService';
+import { useAuth } from '../../../../contexts/AuthContext';
+
+const SentInvoices = () => {
+  const { currentOrganization } = useAuth();
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    status: 'all',
+    search: '',
+    dateFrom: '',
+    dateTo: ''
+  });
+  const [selectedInvoices, setSelectedInvoices] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+
+  useEffect(() => {
+    if (currentOrganization?.organization_id) {
+      loadInvoices();
+    }
+  }, [currentOrganization, filters]);
+
+  const loadInvoices = async () => {
+    try {
+      setLoading(true);
+      const data = await invoiceService.getSentInvoices(currentOrganization.organization_id, filters);
+      setInvoices(data);
+    } catch (error) {
+      console.error('Error loading sent invoices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (invoiceId, newStatus) => {
+    try {
+      await invoiceService.updateInvoiceStatus(invoiceId, 'sent', newStatus);
+      await loadInvoices(); // Reload to get updated data
+    } catch (error) {
+      console.error('Error updating invoice status:', error);
+    }
+  };
+
+  const handleBulkStatusUpdate = async (status) => {
+    try {
+      await invoiceService.bulkUpdateStatus(selectedInvoices, 'sent', status);
+      setSelectedInvoices([]);
+      setShowBulkActions(false);
+      await loadInvoices();
+    } catch (error) {
+      console.error('Error bulk updating status:', error);
+    }
+  };
+
+  const handleDelete = async (invoiceId) => {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      try {
+        await invoiceService.deleteInvoice(invoiceId, 'sent');
+        await loadInvoices();
+      } catch (error) {
+        console.error('Error deleting invoice:', error);
+      }
+    }
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedInvoices(invoices.map(invoice => invoice.id));
+      setShowBulkActions(true);
+    } else {
+      setSelectedInvoices([]);
+      setShowBulkActions(false);
+    }
+  };
+
+  const handleSelectInvoice = (invoiceId, checked) => {
+    if (checked) {
+      setSelectedInvoices([...selectedInvoices, invoiceId]);
+      setShowBulkActions(true);
+    } else {
+      const newSelected = selectedInvoices.filter(id => id !== invoiceId);
+      setSelectedInvoices(newSelected);
+      setShowBulkActions(newSelected.length > 0);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'paid': return 'text-green-600 bg-green-100';
+      case 'overdue': return 'text-red-600 bg-red-100';
+      case 'sent': return 'text-blue-600 bg-blue-100';
+      case 'draft': return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-white rounded-lg p-6 shadow animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="bg-white rounded-lg p-6 shadow">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="sent">Sent</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <input
+              type="text"
+              placeholder="Search invoices..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Bulk Actions */}
+      {showBulkActions && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-blue-900">
+              {selectedInvoices.length} invoice(s) selected
+            </span>
+            <div className="flex space-x-2">
+              <select
+                onChange={(e) => handleBulkStatusUpdate(e.target.value)}
+                className="border border-blue-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Update Status</option>
+                <option value="sent">Mark as Sent</option>
+                <option value="paid">Mark as Paid</option>
+                <option value="overdue">Mark as Overdue</option>
+              </select>
+              <button
+                onClick={() => {
+                  setSelectedInvoices([]);
+                  setShowBulkActions(false);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoices Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    checked={selectedInvoices.length === invoices.length && invoices.length > 0}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Invoice
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Client
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date Issued
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Due Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {invoices.length > 0 ? (
+                invoices.map((invoice) => (
+                  <tr key={invoice.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedInvoices.includes(invoice.id)}
+                        onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{invoice.invoice_number}</div>
+                      <div className="text-sm text-gray-500">{invoice.description}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{invoice.client_name}</div>
+                      <div className="text-sm text-gray-500">{invoice.client_email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        £{parseFloat(invoice.total_amount).toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(invoice.date_issued)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(invoice.due_date)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
+                        {invoice.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <select
+                          value={invoice.status}
+                          onChange={(e) => handleStatusUpdate(invoice.id, e.target.value)}
+                          className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="draft">Draft</option>
+                          <option value="sent">Sent</option>
+                          <option value="paid">Paid</option>
+                          <option value="overdue">Overdue</option>
+                        </select>
+                        <button
+                          onClick={() => handleDelete(invoice.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="mt-2">No invoices found</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SentInvoices; 
