@@ -279,11 +279,6 @@ const Employees = () => {
         </button>
       </div>
       <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Employees</h1>
-        <p className="text-gray-600 text-sm mb-6">Manage employee information, organizational structure, and team relationships.</p>
-      </div>
-
       {/* Tabs */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">

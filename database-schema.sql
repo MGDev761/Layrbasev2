@@ -205,4 +205,7 @@ CREATE POLICY "Users can update organizations they are an owner of" ON organizat
     )
   );
 
-DROP FUNCTION IF EXISTS public.create_organization_with_owner(text, text, text, text, text); 
+DROP FUNCTION IF EXISTS public.create_organization_with_owner(text, text, text, text, text);
+
+-- Add current_bank_balance to cash_flow_snapshots
+ALTER TABLE cash_flow_snapshots ADD COLUMN IF NOT EXISTS current_bank_balance DECIMAL(15,2); 

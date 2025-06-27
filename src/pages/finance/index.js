@@ -1,12 +1,18 @@
 import React from 'react';
 import Overview from './components/Overview';
 import Invoices from './components/invoices/Invoices';
+import CashFlow from './components/cashflow/CashFlow';
+import BudgetLanding from './BudgetLanding';
 
 const Finance = ({ activeSubTab, onSubTabChange }) => {
   const renderContent = () => {
     switch (activeSubTab) {
       case 'overview':
         return <Overview />;
+      case 'budget':
+        return <BudgetLanding />;
+      case 'cashflow':
+        return <CashFlow />;
       case 'invoicing':
         return <Invoices />;
       case 'management':

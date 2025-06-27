@@ -66,6 +66,7 @@ const SideNav = ({
     finance: [
       { id: 'overview', name: 'Overview' },
       { id: 'budget', name: 'Budget & Forecast' },
+      { id: 'cashflow', name: 'Cash Flow' },
       { id: 'invoicing', name: 'Invoicing' },
       { id: 'management', name: 'Management Accounts' },
     ],

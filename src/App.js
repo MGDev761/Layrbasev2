@@ -25,6 +25,7 @@ function App() {
         <Route path="company/details" element={<CompanySetup activeSubTab="details" />} />
         <Route path="finance/overview" element={<Finance activeSubTab="overview" />} />
         <Route path="finance/budget" element={<BudgetLanding />} />
+        <Route path="finance/cashflow" element={<Finance activeSubTab="cashflow" />} />
         <Route path="finance/budget/table" element={<Budget />} />
         <Route path="finance/invoicing" element={<Finance activeSubTab="invoicing" />} />
         <Route path="finance/management" element={<Finance activeSubTab="management" />} />
