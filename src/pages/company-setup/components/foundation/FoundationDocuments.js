@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CheckCircleIcon, LinkIcon, ArrowUpOnSquareIcon, DocumentTextIcon, BuildingOfficeIcon } from '@heroicons/react/20/solid';
+import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { getCompanyProfile, upsertCompanyProfile } from '../../../../services/legalService';
 import { supabase } from '../../../../lib/supabase';
@@ -320,6 +321,46 @@ const VatPopup = ({
   </div>
 );
 
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openContent, setOpenContent] = useState({ intro: true, checklist: false, docs: false });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({ add: true, upload: false, links: false });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Foundations Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><BookOpenIcon className="w-5 h-5" /> Basics</button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><Cog6ToothIcon className="w-5 h-5" /> Platform How-To</button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><ChatBubbleLeftRightIcon className="w-5 h-5" /> AI</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (<>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Overview</span>{openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.intro && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Set up your company's legal and operational foundations. Complete the checklist to ensure all key documents and info are in place.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('checklist')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Checklist</span>{openContent.checklist ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.checklist && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Company name, number, and incorporation date</li><li>Registered office and contact info</li><li>Articles of association, founder agreements, NDAs, and IP assignment</li><li>Bank account, VAT, insurance, and board structure</li></ul></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('docs')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Key Documents</span>{openContent.docs ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.docs && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Upload and store all foundational documents securely</li><li>Keep everything accessible for your team and investors</li></ul></div>)}</div>
+          </>)}
+          {tab === 'platform' && (<>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('add')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Adding Info</span>{openPlatform.add ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.add && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Click on each checklist item to add or update information. Use the popups to upload documents and enter details.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('upload')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Uploading Documents</span>{openPlatform.upload ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.upload && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Upload articles, agreements, NDAs, and insurance docs. Accepted formats: PDF, DOCX, PNG, JPG.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('links')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Links & Navigation</span>{openPlatform.links ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.links && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Use the provided links to jump to the cap table, compliance deadlines, or add reminders to your calendar.</p></div>)}</div>
+          </>)}
+          {tab === 'ai' && (<div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}><div className="flex-1 overflow-y-auto space-y-3 mb-4"><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your company setup assistant. I can help you complete your foundation checklist, upload documents, and answer questions about using this platform.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">What documents do I need to upload?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Upload your articles of association, founder agreements, NDAs, IP assignments, and insurance docs. Make sure everything is up to date.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I update my company info?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Click on the checklist items to edit company name, number, address, and more. Use the popups to upload or update details.</div></div></div><form className="flex items-center gap-2"><input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about company setup..." disabled /><button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button></form></div>)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const FoundationDocuments = () => {
   const { currentOrganization } = useAuth();
   const [showCompanyPopup, setShowCompanyPopup] = useState(false);
@@ -339,6 +380,7 @@ const FoundationDocuments = () => {
   const [bankAccountOpened, setBankAccountOpened] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const fileInputRef = useRef();
+  const [showHelpModal, setShowHelpModal] = useState(false);
   
   const [checklist, setChecklist] = useState([
     { step: 'Company Name & Logo', description: 'Set your legal company name and upload your logo.', hasUpload: true, uploadType: 'logo', completed: false, popup: 'companyName' },
@@ -524,154 +566,164 @@ const FoundationDocuments = () => {
     </div>
   );
 
-        return (
-    <div className="bg-white rounded-lg shadow border border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900">Company Setup Wizard</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Complete your company setup step by step.
-        </p>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Setup Progress</h3>
-          <span className="text-sm font-medium text-gray-600">{progressPercentage}% Complete</span>
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Company Foundations</h1>
+          <p className="text-gray-600 text-sm mb-6">Set up your company's legal and operational foundations. Complete the checklist to ensure all key documents and info are in place.</p>
         </div>
-        
-        {/* Overall Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-green-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          ></div>
-        </div>
+        <button
+          onClick={() => setShowHelpModal(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+        >
+          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          Help
+        </button>
       </div>
+      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+      <div className="bg-white rounded-lg shadow border border-gray-200">
+        {/* Progress Bar */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Setup Progress</h3>
+            <span className="text-sm font-medium text-gray-600">{progressPercentage}% Complete</span>
+          </div>
+          
+          {/* Overall Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-green-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+        </div>
 
-      {/* Wizard Content */}
-      <div className="p-6">
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-blue-800 mb-2">Quick Setup</h3>
-              <p className="text-sm text-blue-700 mb-3">
-                Click on any step to complete it. Some steps will open forms to collect information.
-              </p>
-              <button
-                onClick={() => setShowCompanyPopup(true)}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                Start with Company Name →
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {checklist.map((item, index) => (
-                <div
-                  key={item.step}
-                  className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
-                    item.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                  }`}
-                  onClick={() => handleStepClick(index)}
+        {/* Wizard Content */}
+        <div className="p-6">
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-blue-800 mb-2">Quick Setup</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  Click on any step to complete it. Some steps will open forms to collect information.
+                </p>
+                <button
+                  onClick={() => setShowCompanyPopup(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
                 >
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleComplete(index);
-                      }}
-                      className={`flex-shrink-0 ${
-                        item.completed ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      <CheckCircleIcon className="h-6 w-6" />
-                    </button>
-                    <div>
-                      <h4 className={`text-sm font-medium ${item.completed ? 'text-green-800' : 'text-gray-900'}`}>
-                        {item.step}
-                      </h4>
-                      <p className={`text-sm ${item.completed ? 'text-green-700' : 'text-gray-600'}`}>
-                        {item.description}
-                      </p>
+                  Start with Company Name →
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {checklist.map((item, index) => (
+                  <div
+                    key={item.step}
+                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                      item.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                    onClick={() => handleStepClick(index)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleComplete(index);
+                        }}
+                        className={`flex-shrink-0 ${
+                          item.completed ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        <CheckCircleIcon className="h-6 w-6" />
+                      </button>
+                      <div>
+                        <h4 className={`text-sm font-medium ${item.completed ? 'text-green-800' : 'text-gray-900'}`}>
+                          {item.step}
+                        </h4>
+                        <p className={`text-sm ${item.completed ? 'text-green-700' : 'text-gray-600'}`}>
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {item.hasUpload && (
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1"
+                        >
+                          <ArrowUpOnSquareIcon className="h-4 w-4" />
+                          <span>Upload</span>
+                        </button>
+                      )}
+                      {item.hasLink && (
+                        <a 
+                          href={item.linkTo} 
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                        >
+                          <LinkIcon className="h-4 w-4" />
+                          <span>{item.linkText}</span>
+                        </a>
+                      )}
+                      {item.popup && (
+                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                          Click to edit
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {item.hasUpload && (
-                      <button 
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1"
-                      >
-                        <ArrowUpOnSquareIcon className="h-4 w-4" />
-                        <span>Upload</span>
-                      </button>
-                    )}
-                    {item.hasLink && (
-                      <a 
-                        href={item.linkTo} 
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        <span>{item.linkText}</span>
-                      </a>
-                    )}
-                    {item.popup && (
-                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                        Click to edit
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-      </div>
+        </div>
 
-      {/* Modals */}
-      {showCompanyPopup && <CompanyNamePopup 
-        companyName={companyName}
-        setCompanyName={setCompanyName}
-        logoUrl={logoUrl}
-        setLogoUrl={setLogoUrl}
-        fileInputRef={fileInputRef}
-        handleLogoUpload={handleLogoUpload}
-        handleCompanyNameSubmit={handleCompanyNameSubmit}
-        setShowCompanyPopup={setShowCompanyPopup}
-      />}
-      {showCompanyNumberPopup && <CompanyNumberPopup 
-        companyNumber={companyNumber}
-        setCompanyNumber={setCompanyNumber}
-        incorporationDate={incorporationDate}
-        setIncorporationDate={setIncorporationDate}
-        handleCompanyNumberSubmit={handleCompanyNumberSubmit}
-        setShowCompanyNumberPopup={setShowCompanyNumberPopup}
-      />}
-      {showOfficePopup && <OfficePopup 
-        registeredOffice={registeredOffice}
-        setRegisteredOffice={setRegisteredOffice}
-        website={website}
-        setWebsite={setWebsite}
-        contactEmail={contactEmail}
-        setContactEmail={setContactEmail}
-        linkedinProfile={linkedinProfile}
-        setLinkedinProfile={setLinkedinProfile}
-        handleOfficeSubmit={handleOfficeSubmit}
-        setShowOfficePopup={setShowOfficePopup}
-      />}
-      {showBankPopup && <BankPopup 
-        bankProvider={bankProvider}
-        setBankProvider={setBankProvider}
-        bankAccountOpened={bankAccountOpened}
-        setBankAccountOpened={setBankAccountOpened}
-        handleBankSubmit={handleBankSubmit}
-        setShowBankPopup={setShowBankPopup}
-      />}
-      {showVatPopup && <VatPopup 
-        vatNumber={vatNumber}
-        setVatNumber={setVatNumber}
-        handleVatSubmit={handleVatSubmit}
-        setShowVatPopup={setShowVatPopup}
-      />}
+        {/* Modals */}
+        {showCompanyPopup && <CompanyNamePopup 
+          companyName={companyName}
+          setCompanyName={setCompanyName}
+          logoUrl={logoUrl}
+          setLogoUrl={setLogoUrl}
+          fileInputRef={fileInputRef}
+          handleLogoUpload={handleLogoUpload}
+          handleCompanyNameSubmit={handleCompanyNameSubmit}
+          setShowCompanyPopup={setShowCompanyPopup}
+        />}
+        {showCompanyNumberPopup && <CompanyNumberPopup 
+          companyNumber={companyNumber}
+          setCompanyNumber={setCompanyNumber}
+          incorporationDate={incorporationDate}
+          setIncorporationDate={setIncorporationDate}
+          handleCompanyNumberSubmit={handleCompanyNumberSubmit}
+          setShowCompanyNumberPopup={setShowCompanyNumberPopup}
+        />}
+        {showOfficePopup && <OfficePopup 
+          registeredOffice={registeredOffice}
+          setRegisteredOffice={setRegisteredOffice}
+          website={website}
+          setWebsite={setWebsite}
+          contactEmail={contactEmail}
+          setContactEmail={setContactEmail}
+          linkedinProfile={linkedinProfile}
+          setLinkedinProfile={setLinkedinProfile}
+          handleOfficeSubmit={handleOfficeSubmit}
+          setShowOfficePopup={setShowOfficePopup}
+        />}
+        {showBankPopup && <BankPopup 
+          bankProvider={bankProvider}
+          setBankProvider={setBankProvider}
+          bankAccountOpened={bankAccountOpened}
+          setBankAccountOpened={setBankAccountOpened}
+          handleBankSubmit={handleBankSubmit}
+          setShowBankPopup={setShowBankPopup}
+        />}
+        {showVatPopup && <VatPopup 
+          vatNumber={vatNumber}
+          setVatNumber={setVatNumber}
+          handleVatSubmit={handleVatSubmit}
+          setShowVatPopup={setShowVatPopup}
+        />}
+      </div>
     </div>
   );
 };

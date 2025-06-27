@@ -19,7 +19,7 @@ const CompanySetup = ({ activeSubTab, onSubTabChange }) => {
 
   return (
     <Fragment>
-      <div className="mt-8">
+      <div>
         {renderContent()}
       </div>
     </Fragment>
