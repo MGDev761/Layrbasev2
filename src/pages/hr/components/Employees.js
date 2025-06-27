@@ -5,6 +5,7 @@ import { fetchHolidays } from '../../../services/holidaysService';
 import { supabase } from '../../../lib/supabase';
 import Card from '../../../components/common/layout/Card';
 import OrgChart from './layout/OrgChart';
+import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const initialForm = {
   name: '',
@@ -16,6 +17,46 @@ const initialForm = {
   contract_type: '',
   profile: '',
   user_id: null
+};
+
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openContent, setOpenContent] = useState({ intro: true, onboarding: false, roles: false });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({ add: true, edit: false, search: false });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Employees Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><BookOpenIcon className="w-5 h-5" /> Basics</button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><Cog6ToothIcon className="w-5 h-5" /> Platform How-To</button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><ChatBubbleLeftRightIcon className="w-5 h-5" /> AI</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (<>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Overview</span>{openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.intro && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Manage your organization's employees, roles, and onboarding in one place. Track employee details, contracts, and reporting lines.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('onboarding')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Onboarding</span>{openContent.onboarding ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.onboarding && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Add new employees with their details and contract type</li><li>Assign managers and departments</li><li>Track start dates and onboarding progress</li></ul></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('roles')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Roles & Departments</span>{openContent.roles ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.roles && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Organize employees by department and role</li><li>Assign reporting lines and managers</li><li>Keep org charts up to date</li></ul></div>)}</div>
+          </>)}
+          {tab === 'platform' && (<>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('add')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Adding Employees</span>{openPlatform.add ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.add && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Use the "Add Employee" button to create new records. Fill in all required fields and assign a manager if needed. Save to update the employee list.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('edit')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Editing & Linking</span>{openPlatform.edit ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.edit && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Edit employee details by clicking on their name. Link users to employees for SSO and permissions management.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('search')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Search & Filter</span>{openPlatform.search ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.search && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Use the search bar to find employees by name, department, or email. Filter by department or contract type for quick access.</p></div>)}</div>
+          </>)}
+          {tab === 'ai' && (<div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}><div className="flex-1 overflow-y-auto space-y-3 mb-4"><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your HR assistant. I can help you onboard employees, manage roles, and answer questions about using this platform.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I add a new employee?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Click the "Add Employee" button, fill in the required details, and save. Assign a manager and department if needed.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I update an employee's department?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Edit the employee record, select the new department, and save changes. The org chart will update automatically.</div></div></div><form className="flex items-center gap-2"><input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about HR..." disabled /><button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button></form></div>)}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const Employees = () => {
@@ -39,6 +80,7 @@ const Employees = () => {
   const [profileHolidays, setProfileHolidays] = useState([]);
   const [profileTeam, setProfileTeam] = useState([]);
   const [profileActivity, setProfileActivity] = useState([]);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   // Fetch employees
   const loadEmployees = () => {
@@ -222,6 +264,21 @@ const Employees = () => {
 
   return (
     <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Employees</h1>
+          <p className="text-gray-600 text-sm mb-6">Manage your organization's employees, onboarding, and roles.</p>
+        </div>
+        <button
+          onClick={() => setShowHelpModal(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+        >
+          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          Help
+        </button>
+      </div>
+      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Employees</h1>
         <p className="text-gray-600 text-sm mb-6">Manage employee information, organizational structure, and team relationships.</p>

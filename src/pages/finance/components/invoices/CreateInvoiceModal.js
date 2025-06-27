@@ -66,14 +66,12 @@ const CreateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!currentOrganization?.organization_id) {
-      alert('No organization selected');
-      return;
-    }
-
     try {
-      setLoading(true);
-      
+      if (!currentOrganization?.organization_id) {
+        alert('No organization selected');
+        return;
+      }
+
       // Validate required fields
       if (!formData.invoice_number || !formData.client_name || !formData.date_issued || !formData.due_date) {
         alert('Please fill in all required fields');
@@ -93,7 +91,6 @@ const CreateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
       };
 
       await invoiceService.createSentInvoice(currentOrganization.organization_id, invoiceData);
-      
       // Reset form
       setFormData({
         invoice_number: '',
@@ -107,12 +104,15 @@ const CreateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
         tax_amount: 0,
         lineItems: [{ description: '', quantity: 1, rate: 0 }]
       });
-
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error creating invoice:', error);
-      alert('Error creating invoice. Please try again.');
+      if (error.code === '23505') {
+        alert('Invoice number already exists for this organization. Please use a unique invoice number.');
+      } else {
+        alert('Error creating invoice. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl rounded-md bg-white">
         <div className="mt-3">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900">Create New Invoice</h3>

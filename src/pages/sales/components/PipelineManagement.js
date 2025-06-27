@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, CurrencyDollarIcon, CalendarIcon, PencilIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid';
+import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { getCrmDeals, createCrmDeal, updateCrmDeal, deleteCrmDeal, getCrmCompanies } from '../../../services/salesService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -12,6 +13,47 @@ const STAGES = [
   { id: 'closed', name: 'Closed', color: 'bg-green-200' },
 ];
 
+// Help Modal Component
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openContent, setOpenContent] = useState({ intro: true, stages: false, metrics: false });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({ navigation: true, management: false, dragdrop: false });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Sales Pipeline Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><BookOpenIcon className="w-5 h-5" /> Basics</button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><Cog6ToothIcon className="w-5 h-5" /> Platform How-To</button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><ChatBubbleLeftRightIcon className="w-5 h-5" /> AI</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (<>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Pipeline Overview</span>{openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.intro && (<div className="px-6 py-4 text-gray-700 text-sm"><p>The Sales Pipeline helps you track deals through different stages from initial lead to closed sale. Monitor progress, manage deal flow, and optimize your sales process with visual kanban-style management.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('stages')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Pipeline Stages</span>{openContent.stages ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.stages && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li><strong>Lead:</strong> Initial contact or inquiry</li><li><strong>Qualified:</strong> Verified prospect with potential</li><li><strong>Proposal:</strong> Formal offer presented</li><li><strong>Negotiation:</strong> Terms and conditions discussion</li><li><strong>Closed:</strong> Deal won or lost</li></ul></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('metrics')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Key Metrics</span>{openContent.metrics ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.metrics && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Deal count per stage</li><li>Total pipeline value</li><li>Conversion rates between stages</li><li>Average deal size</li><li>Time spent in each stage</li></ul></div>)}</div>
+          </>)}
+          {tab === 'platform' && (<>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('navigation')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Navigation</span>{openPlatform.navigation ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.navigation && (<div className="px-6 py-4 text-gray-700 text-sm"><p>View your pipeline as a kanban board with drag-and-drop functionality. Use the search bar to find specific deals. Filter by deal owner to focus on your deals or team performance.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('management')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Deal Management</span>{openPlatform.management ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.management && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Add new deals using the "Add Deal" button. Edit deal details by clicking on any deal card. Update close dates, values, and notes to keep your pipeline current.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('dragdrop')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Drag & Drop</span>{openPlatform.dragdrop ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.dragdrop && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Drag deals between stages to update their progress. The system automatically saves changes and updates metrics. Use this to quickly move deals through your sales process.</p></div>)}</div>
+          </>)}
+          {tab === 'ai' && (<div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}><div className="flex-1 overflow-y-auto space-y-3 mb-4"><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your sales pipeline assistant. I can help you optimize your sales process, improve conversion rates, and manage your deals more effectively.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How can I improve my pipeline conversion rate?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Focus on lead qualification, follow-up timing, and deal stage progression. Consider implementing automated reminders and tracking key metrics like time-in-stage.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">What's the best way to organize my pipeline stages?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Keep stages simple and meaningful. Ensure each stage represents a clear milestone in your sales process. Regularly review and optimize based on your team's workflow.</div></div></div><form className="flex items-center gap-2"><input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about pipeline optimization..." disabled /><button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button></form></div>)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PipelineManagement = ({ onBack }) => {
   const { currentOrganization } = useAuth();
   const orgId = currentOrganization?.organization_id;
@@ -23,6 +65,7 @@ const PipelineManagement = ({ onBack }) => {
   const [form, setForm] = useState({ name: '', value: '', stage: 'lead', close_date: '', notes: '', company_id: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [dealOwnerFilter, setDealOwnerFilter] = useState('all');
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const emptyDeal = { name: '', value: '', stage: 'lead', close_date: '', notes: '', company_id: '' };
 
   useEffect(() => {
@@ -121,11 +164,21 @@ const PipelineManagement = ({ onBack }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h3 className="text-lg font-medium text-gray-900">Pipeline</h3>
-        <p className="mt-1 text-sm text-gray-600">
-          Manage your sales pipeline and track deal progress through different stages.
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900">Pipeline</h3>
+          <p className="mt-1 text-sm text-gray-600">
+            Manage your sales pipeline and track deal progress through different stages.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowHelpModal(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+        >
+          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          Help
+        </button>
       </div>
 
       {/* Search and Filters */}
@@ -262,6 +315,9 @@ const PipelineManagement = ({ onBack }) => {
           </form>
         </div>
       )}
+
+      {/* Help Modal */}
+      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DocumentTextIcon, MagnifyingGlassIcon, XMarkIcon, PencilSquareIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { DocumentTextIcon, MagnifyingGlassIcon, XMarkIcon, PencilSquareIcon, ChevronDownIcon, ChevronRightIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { getTemplates, createContractFromTemplate, getContractFolders, generateContractPDF, saveGeneratedPDF, getCompanyProfile } from '../../../services/legalService';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -123,6 +123,167 @@ const CustomizeModal = React.memo(({
   );
 });
 
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openSections, setOpenSections] = useState({
+    basics: true,
+    platform: false,
+    ai: false
+  });
+  const toggleSection = (key) => setOpenSections(s => ({ ...s, [key]: !s[key] }));
+  const [openContent, setOpenContent] = useState({
+    intro: true,
+    why: false,
+    best: false
+  });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({
+    quick: true,
+    tips: false,
+    faq: false
+  });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Templates Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <BookOpenIcon className="w-5 h-5" /> Templates Basics
+          </button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <Cog6ToothIcon className="w-5 h-5" /> Platform How-To
+          </button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <ChatBubbleLeftRightIcon className="w-5 h-5" /> AI
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (
+            <>
+              {/* Introduction Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Introduction</span>
+                  {openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.intro && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Contract templates help standardize your business processes and ensure consistency across all agreements. This section covers best practices for using and customizing templates.</p>
+                  </div>
+                )}
+              </div>
+              {/* Why It's Important Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('why')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Why It's Important</span>
+                  {openContent.why ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.why && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>Ensures consistency across all contracts</li>
+                      <li>Saves time on contract creation</li>
+                      <li>Reduces legal review requirements</li>
+                      <li>Maintains compliance with standard terms</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              {/* Best Practice Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('best')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Best Practice</span>
+                  {openContent.best ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.best && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>Use templates to standardize contracts and documents</li>
+                      <li>Customize templates for your business needs</li>
+                      <li>Keep templates up to date with legal requirements</li>
+                      <li>Organize templates by category or folder</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {tab === 'platform' && (
+            <>
+              {/* Quick Start Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('quick')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Browse Templates</span>
+                  {openPlatform.quick ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.quick && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Browse and search templates by name or category. Each template includes customizable fields that you can fill in before generating your contract.</p>
+                  </div>
+                )}
+              </div>
+              {/* Tips Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('tips')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Customize Templates</span>
+                  {openPlatform.tips ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.tips && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Customize templates before generating contracts. Add your company details, client information, and specific terms to create personalized agreements.</p>
+                  </div>
+                )}
+              </div>
+              {/* FAQ Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('faq')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Save and Export</span>
+                  {openPlatform.faq ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.faq && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Save customized templates for future use and export generated documents as needed. All contracts are automatically stored in your contracts section.</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {tab === 'ai' && (
+            <div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}>
+              {/* Chat messages */}
+              <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your templates assistant. I can help you customize templates, understand legal terms, and answer questions about using this platform.</div>
+                </div>
+                <div className="flex justify-end">
+                  <div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I customize a template?</div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Click on any template to open the customization modal. Fill in the required fields like company name, client details, and specific terms. You can also add the contract to a folder for organization.</div>
+                </div>
+              </div>
+              {/* Input box */}
+              <form className="flex items-center gap-2">
+                <input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about templates..." disabled />
+                <button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Templates = () => {
   const { currentOrganization } = useAuth();
   const [templates, setTemplates] = useState([]);
@@ -136,6 +297,7 @@ const Templates = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [companyProfile, setCompanyProfile] = useState(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   useEffect(() => {
     loadTemplates();
@@ -259,10 +421,21 @@ const Templates = () => {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h3 className="text-xl font-bold text-gray-900">Templates Library</h3>
-        <p className="text-sm text-gray-500 mt-1">Browse and customize pre-built legal templates for your business.</p>
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Templates</h2>
+          <p className="text-gray-600 text-sm">Browse, customize, and generate legal templates.</p>
+        </div>
+        <button
+          onClick={() => setShowInfoModal(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+        >
+          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          Help
+        </button>
       </div>
+      <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column */}
         <div className="md:col-span-1 space-y-6">

@@ -1,9 +1,51 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { getCrmCompanies, createCrmCompany, updateCrmCompany, deleteCrmCompany, getCrmContacts } from '../../../../services/salesService';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { MagnifyingGlassIcon, PlusIcon, PencilIcon, TrashIcon, BuildingOfficeIcon, UserIcon, ChatBubbleLeftRightIcon, DocumentTextIcon, ClockIcon, XMarkIcon, EllipsisVerticalIcon } from '@heroicons/react/20/solid';
+import { MagnifyingGlassIcon, PlusIcon, PencilIcon, TrashIcon, BuildingOfficeIcon, UserIcon, DocumentTextIcon, ClockIcon, XMarkIcon, EllipsisVerticalIcon } from '@heroicons/react/20/solid';
+import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import CompanyDetail from './CompanyDetail';
 import ContactsList from './ContactsList';
+
+// Help Modal Component
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openContent, setOpenContent] = useState({ intro: true, companies: false, contacts: false });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({ navigation: true, management: false, search: false });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Contacts & Companies Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><BookOpenIcon className="w-5 h-5" /> Basics</button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><Cog6ToothIcon className="w-5 h-5" /> Platform How-To</button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><ChatBubbleLeftRightIcon className="w-5 h-5" /> AI</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (<>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Overview</span>{openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.intro && (<div className="px-6 py-4 text-gray-700 text-sm"><p>The Contacts & Companies section helps you manage your customer database, organize contacts by company, and track all customer interactions in one centralized location.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('companies')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Managing Companies</span>{openContent.companies ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.companies && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Add new companies with basic information like name, industry, and website</li><li>Track company status (active, inactive, prospect)</li><li>View all contacts associated with each company</li><li>Edit company details and manage relationships</li></ul></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('contacts')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Managing Contacts</span>{openContent.contacts ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.contacts && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Add contacts with detailed information and communication history</li><li>Track contact status and lead scores</li><li>Organize contacts by company and role</li><li>Maintain communication logs and notes</li></ul></div>)}</div>
+          </>)}
+          {tab === 'platform' && (<>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('navigation')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Navigation</span>{openPlatform.navigation ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.navigation && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Switch between Companies and Contacts tabs. Use the search bar to find specific companies or contacts. Click on any company to view its details and associated contacts.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('management')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Data Management</span>{openPlatform.management ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.management && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Add new companies and contacts using the "Add" button. Edit existing records by clicking the edit icon. Use bulk editing for multiple records. All changes are automatically saved.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('search')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Search & Filters</span>{openPlatform.search ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.search && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Use the search bar to find companies by name or website. Filter by status to view active, inactive, or prospect companies. Sort by any column for better organization.</p></div>)}</div>
+          </>)}
+          {tab === 'ai' && (<div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}><div className="flex-1 overflow-y-auto space-y-3 mb-4"><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your contacts management assistant. I can help you organize your customer database, improve contact relationships, and optimize your CRM workflow.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How should I organize my customer contacts?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Group contacts by company, use consistent naming conventions, and maintain regular communication logs. Consider using tags for different roles and interests.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">What's the best way to track customer interactions?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Log all communications, meetings, and follow-ups. Use notes to record important details and set reminders for follow-up actions.</div></div></div><form className="flex items-center gap-2"><input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about contact management..." disabled /><button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button></form></div>)}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function CompaniesList({ onBack }) {
   const { currentOrganization } = useAuth();
@@ -23,6 +65,7 @@ export default function CompaniesList({ onBack }) {
   const [contactDetailTab, setContactDetailTab] = useState('communication');
   const [editingField, setEditingField] = useState(null);
   const [bulkEditing, setBulkEditing] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -274,11 +317,21 @@ export default function CompaniesList({ onBack }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h3 className="text-lg font-medium text-gray-900">Companies & Contacts</h3>
-        <p className="mt-1 text-sm text-gray-600">
-          Manage your companies and contacts in one place.
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900">Companies & Contacts</h3>
+          <p className="mt-1 text-sm text-gray-600">
+            Manage your companies and contacts in one place.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowHelpModal(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+        >
+          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          Help
+        </button>
       </div>
 
       <div className="max-w-6xl mx-auto">
@@ -989,6 +1042,9 @@ export default function CompaniesList({ onBack }) {
           </div>
         )}
       </div>
+
+      {/* Help Modal */}
+      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
 } 

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { XMarkIcon, DocumentArrowUpIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { invoiceService } from '../../../../services/invoiceService';
 
 const UploadInvoiceModal = ({ isOpen, onClose, organizationId, onInvoiceUploaded }) => {
   const [formData, setFormData] = useState({
@@ -110,18 +111,28 @@ const UploadInvoiceModal = ({ isOpen, onClose, organizationId, onInvoiceUploaded
     }
 
     try {
-      // TODO: Replace with actual API call
-      // const formDataToSend = new FormData();
-      // formDataToSend.append('file', uploadedFile);
-      // formDataToSend.append('data', JSON.stringify(formData));
-      // await invoiceService.uploadInvoice(organizationId, formDataToSend);
-      
-      console.log('Uploading invoice:', { formData, file: uploadedFile });
-      
-      // Mock success
+      if (!organizationId) {
+        alert('No organization selected');
+        return;
+      }
+      // Map form fields to DB columns
+      const dbInvoiceData = {
+        invoice_number: formData.invoiceNumber,
+        supplier_name: formData.supplier,
+        date_issued: formData.dateIssued,
+        due_date: formData.dueDate,
+        total_amount: formData.amount,
+        category: formData.category,
+        payment_method: formData.paymentMethod,
+        status: formData.status,
+        currency: formData.currency,
+        description: formData.description,
+      };
+      await invoiceService.uploadReceivedInvoice(organizationId, dbInvoiceData, uploadedFile);
       onInvoiceUploaded();
     } catch (error) {
       console.error('Error uploading invoice:', error);
+      alert('Error uploading invoice. Please try again.');
     }
   };
 

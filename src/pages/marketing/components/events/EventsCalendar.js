@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { getMarketingEvents, createMarketingEvent, updateMarketingEvent, deleteMarketingEvent } from '../../../../services/marketingService';
 import dayjs from 'dayjs';
+import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -18,6 +19,47 @@ function getMonthMatrix(year, month) {
   return days;
 }
 
+// Help Modal Component
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openContent, setOpenContent] = useState({ intro: true, why: false, best: false });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({ quick: true, tips: false, faq: false });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Events Calendar Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><BookOpenIcon className="w-5 h-5" /> Basics</button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><Cog6ToothIcon className="w-5 h-5" /> Platform How-To</button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><ChatBubbleLeftRightIcon className="w-5 h-5" /> AI</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (<>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Introduction</span>{openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.intro && (<div className="px-6 py-4 text-gray-700 text-sm"><p>The Events Calendar helps you plan, track, and manage all your marketing activities in one place, including blog posts, campaigns, and launches.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('why')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Why It's Important</span>{openContent.why ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.why && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Centralizes all marketing events for better visibility</li><li>Helps avoid scheduling conflicts</li><li>Improves team collaboration and planning</li></ul></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => toggleContent('best')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Best Practice</span>{openContent.best ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.best && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Keep the calendar updated after every event</li><li>Use filters and search to quickly find activities</li><li>Review upcoming events weekly with your team</li></ul></div>)}</div>
+          </>)}
+          {tab === 'platform' && (<>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('quick')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Quick Start</span>{openPlatform.quick ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.quick && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Switch between List and Calendar views. Add new events with the "Add" button. Use search and filters to find specific activities.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('tips')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Tips</span>{openPlatform.tips ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.tips && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Color-code event types for clarity. Use the search bar to quickly locate events. Export the calendar for team sharing.</p></div>)}</div>
+            <div className="bg-gray-50"><button onClick={() => togglePlatform('faq')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">FAQ</span>{openPlatform.faq ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.faq && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Q: Can I sync with Google Calendar? <br/>A: Not yet, but it's on the roadmap.</p></div>)}</div>
+          </>)}
+          {tab === 'ai' && (<div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}><div className="flex-1 overflow-y-auto space-y-3 mb-4"><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your marketing events assistant. I can help you plan, schedule, and optimize your marketing calendar.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I avoid overlapping campaigns?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Use the calendar view to spot overlaps and coordinate with your team before scheduling new events.</div></div></div><form className="flex items-center gap-2"><input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about marketing events..." disabled /><button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button></form></div>)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EventsCalendar = () => {
   const { currentOrganization } = useAuth();
   const [view, setView] = useState('list');
@@ -33,6 +75,7 @@ const EventsCalendar = () => {
     event_date: '',
     description: ''
   });
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const activityTypes = [
     { value: 'blog', label: 'Blog Post', color: 'bg-blue-100 text-blue-800' },
@@ -156,9 +199,19 @@ const EventsCalendar = () => {
 
   return (
     <div>
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Events Calendar</h1>
-        <p className="text-gray-600 text-sm mb-6">Plan and manage your marketing activities including blog posts, press releases, ad campaigns, and newsletters.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Events Calendar</h1>
+          <p className="text-gray-600 text-sm mb-6">Plan and manage your marketing activities including blog posts, press releases, ad campaigns, and newsletters.</p>
+        </div>
+        <button
+          onClick={() => setShowHelpModal(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+        >
+          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          Help
+        </button>
       </div>
 
       {/* Tabs and Actions Bar */}
@@ -460,6 +513,7 @@ const EventsCalendar = () => {
           </div>
         </div>
       )}
+      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
 };

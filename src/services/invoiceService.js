@@ -181,15 +181,27 @@ export const invoiceService = {
         const lineItemsData = lineItems.map((item, index) => ({
           invoice_id: invoiceRecord.id,
           description: item.description,
-          quantity: item.quantity,
-          unit_rate: item.rate,
-          amount: item.quantity * item.rate,
+          quantity: parseFloat(item.quantity),
+          unit_rate: parseFloat(item.rate),
+          amount: parseFloat(item.quantity) * parseFloat(item.rate),
           sort_order: index
         }));
 
+        // Explicitly pick only allowed fields
+        const allowedFields = ['invoice_id', 'description', 'quantity', 'unit_rate', 'amount', 'sort_order'];
+        const sanitizedLineItemsData = lineItemsData.map(item => {
+          const sanitized = {};
+          allowedFields.forEach(field => {
+            sanitized[field] = item[field];
+          });
+          return sanitized;
+        });
+
+        console.log('Inserting sanitized line items:', sanitizedLineItemsData);
+
         const { error: lineItemsError } = await supabase
           .from('sent_invoice_line_items')
-          .insert(lineItemsData);
+          .insert(sanitizedLineItemsData);
 
         if (lineItemsError) throw lineItemsError;
       }
@@ -213,13 +225,20 @@ export const invoiceService = {
           .from('invoices')
           .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+        console.log('Upload response:', uploadData, uploadError);
 
-        const { data: { publicUrl } } = supabase.storage
+        if (uploadError) {
+          console.error('Supabase upload error:', uploadError);
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage
           .from('invoices')
           .getPublicUrl(fileName);
 
-        fileUrl = publicUrl;
+        console.log('Public URL data:', publicUrlData);
+
+        fileUrl = publicUrlData.publicUrl;
       }
 
       // Insert invoice
@@ -233,6 +252,8 @@ export const invoiceService = {
         })
         .select()
         .single();
+
+      console.log('DB insert response:', data, error);
 
       if (error) throw error;
       return data;

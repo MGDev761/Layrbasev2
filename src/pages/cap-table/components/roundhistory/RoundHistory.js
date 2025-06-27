@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PlusIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { PlusIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon, XMarkIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
+import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useCapTable } from '../../../../hooks/useCapTable';
 import AddShareClassForm from '../captable/AddShareClassForm';
 import Modal from '../../../../components/common/layout/Modal';
@@ -13,6 +14,162 @@ const formatDate = (dateString) => {
     month: 'long',
     day: 'numeric'
   });
+};
+
+// Help Modal Component
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openContent, setOpenContent] = useState({
+    intro: true,
+    why: false,
+    best: false
+  });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({
+    quick: true,
+    tips: false,
+    faq: false
+  });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Round History Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <BookOpenIcon className="w-5 h-5" /> Round Basics
+          </button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <Cog6ToothIcon className="w-5 h-5" /> Platform How-To
+          </button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <ChatBubbleLeftRightIcon className="w-5 h-5" /> AI
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (
+            <>
+              {/* Introduction Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Introduction</span>
+                  {openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.intro && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Round history tracks all your funding rounds, including pre-money valuations, investments, and participant details. This helps you understand your company's funding journey and ownership evolution.</p>
+                  </div>
+                )}
+              </div>
+              {/* Why It's Important Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('why')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Why It's Important</span>
+                  {openContent.why ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.why && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>Track your company's funding progression and valuation growth</li>
+                      <li>Understand ownership dilution across funding rounds</li>
+                      <li>Maintain accurate records for investor relations</li>
+                      <li>Essential for exit planning and due diligence</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              {/* Best Practice Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('best')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Best Practice</span>
+                  {openContent.best ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.best && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>Record rounds immediately after closing</li>
+                      <li>Include all participants and their investment amounts</li>
+                      <li>Document pre-money valuations accurately</li>
+                      <li>Track option pool changes for each round</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {tab === 'platform' && (
+            <>
+              {/* Quick Start Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('quick')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Add New Rounds</span>
+                  {openPlatform.quick ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.quick && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Click "Add New Round" to record a funding round. Enter the round name, date, pre-money valuation, and add all participants with their investment amounts and shares issued.</p>
+                  </div>
+                )}
+              </div>
+              {/* Tips Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('tips')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Round Details</span>
+                  {openPlatform.tips ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.tips && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Expand each round to see detailed participant information, including investment amounts, shares issued, and post-money valuations. This helps you track ownership changes and dilution.</p>
+                  </div>
+                )}
+              </div>
+              {/* FAQ Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('faq')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Managing Rounds</span>
+                  {openPlatform.faq ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.faq && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>You can edit or delete rounds if needed. Be careful with deletions as they will also remove associated transactions. Always verify round details before saving.</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {tab === 'ai' && (
+            <div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}>
+              {/* Chat messages */}
+              <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your round history assistant. I can help you understand funding rounds, calculate valuations, and answer questions about managing your funding history.</div>
+                </div>
+                <div className="flex justify-end">
+                  <div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I calculate post-money valuation?</div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Post-money valuation = Pre-money valuation + Total investment in the round. This represents your company's value after the funding round closes.</div>
+                </div>
+              </div>
+              {/* Input box */}
+              <form className="flex items-center gap-2">
+                <input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about funding rounds..." disabled />
+                <button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const RoundHistory = ({ onAddRound }) => {
@@ -34,6 +191,7 @@ const RoundHistory = ({ onAddRound }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showNewShareClassForm, setShowNewShareClassForm] = useState(false);
   const [showNewShareholderForm, setShowNewShareholderForm] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     date: new Date().toISOString().split('T')[0],
@@ -352,8 +510,20 @@ const RoundHistory = ({ onAddRound }) => {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Round History</h1>
-        <p className="text-sm text-gray-600 mt-1">Track and manage your funding rounds, valuations, and investment details</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">Round History</h1>
+            <p className="text-gray-600 text-sm mb-6">Track and manage your company's funding rounds and investment history</p>
+          </div>
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+            style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+          >
+            <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+            Help
+          </button>
+        </div>
       </div>
 
       <Modal isOpen={showNewShareClassForm} onClose={() => setShowNewShareClassForm(false)}>
@@ -526,7 +696,7 @@ const RoundHistory = ({ onAddRound }) => {
                       {expandedRounds.has(round.id) ? (
                         <ChevronUpIcon className="h-5 w-5 text-gray-400" />
                       ) : (
-                        <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+                        <ChevronRightIcon className="h-5 w-5 text-gray-400" />
                       )}
                     </div>
                   </div>
@@ -578,6 +748,8 @@ const RoundHistory = ({ onAddRound }) => {
           </div>
         </>
       )}
+
+      <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
     </div>
   );
 };

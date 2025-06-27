@@ -5,10 +5,172 @@ import AddBudgetItemModal from './AddBudgetItemModal';
 import BudgetTable from './BudgetTable';
 import { budgetService } from '../../../../services/budgetService';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlusIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import QuickBudgetEditorModal from './QuickBudgetEditorModal';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Side modal for help/tips (matches legal/compliance format)
+const SideInfoModal = ({ isOpen, onClose }) => {
+  const [tab, setTab] = useState('basics');
+  const [openSections, setOpenSections] = useState({
+    basics: true,
+    platform: false,
+    ai: false
+  });
+  const toggleSection = (key) => setOpenSections(s => ({ ...s, [key]: !s[key] }));
+  const [openContent, setOpenContent] = useState({
+    intro: true,
+    why: false,
+    best: false
+  });
+  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
+  const [openPlatform, setOpenPlatform] = useState({
+    quick: true,
+    tips: false,
+    faq: false
+  });
+  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
+      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Budget & Forecast Help & Tips</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+        </div>
+        <div className="flex border-b border-gray-200 w-full">
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <BookOpenIcon className="w-5 h-5" /> Budgeting Basics
+          </button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <Cog6ToothIcon className="w-5 h-5" /> Platform How-To
+          </button>
+          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
+            <ChatBubbleLeftRightIcon className="w-5 h-5" /> AI
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          {tab === 'basics' && (
+            <>
+              {/* Introduction Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Introduction</span>
+                  {openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.intro && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Budgeting and forecasting are essential for business planning and financial management. This section helps you understand best practices for creating and managing budgets effectively.</p>
+                  </div>
+                )}
+              </div>
+              {/* Why It's Important Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('why')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Why It's Important</span>
+                  {openContent.why ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.why && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>Helps plan and allocate resources effectively</li>
+                      <li>Provides financial control and accountability</li>
+                      <li>Enables better decision-making and strategy</li>
+                      <li>Facilitates performance monitoring and analysis</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              {/* Best Practice Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => toggleContent('best')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Best Practice</span>
+                  {openContent.best ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openContent.best && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>Set clear revenue and cost categories for transparency</li>
+                      <li>Review and update your forecast regularly</li>
+                      <li>Compare actuals vs. budget to spot trends early</li>
+                      <li>Use recurring items for predictable expenses</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {tab === 'platform' && (
+            <>
+              {/* Quick Start Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('quick')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Edit Values Directly</span>
+                  {openPlatform.quick ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.quick && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Click any cell to edit values directly. Use the quick editor for fast category changes and switch between months/quarters for different views.</p>
+                  </div>
+                )}
+              </div>
+              {/* Tips Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('tips')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Compare and Analyze</span>
+                  {openPlatform.tips ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.tips && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Compare forecast vs. budget with one click. Use the budget comparison feature to analyze variances and track performance against targets.</p>
+                  </div>
+                )}
+              </div>
+              {/* FAQ Section */}
+              <div className="bg-gray-50">
+                <button onClick={() => togglePlatform('faq')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
+                  <span className="text-sm">Organize and Structure</span>
+                  {openPlatform.faq ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                </button>
+                {openPlatform.faq && (
+                  <div className="px-6 py-4 text-gray-700 text-sm">
+                    <p>Expand/collapse groups to focus on what matters. All values are editable and organized by revenue and cost categories for easy management.</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {tab === 'ai' && (
+            <div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}>
+              {/* Chat messages */}
+              <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your budgeting assistant. I can help you create budgets, analyze forecasts, and answer questions about using this platform.</div>
+                </div>
+                <div className="flex justify-end">
+                  <div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I add a new budget category?</div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Click the "+" button next to "Revenue" or "Costs" to add a new category. You can also add line items within each category for more detailed budgeting.</div>
+                </div>
+              </div>
+              {/* Input box */}
+              <form className="flex items-center gap-2">
+                <input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about budgeting..." disabled />
+                <button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Budget = () => {
   const navigate = useNavigate();
@@ -53,6 +215,7 @@ const Budget = () => {
   const [editName, setEditName] = useState('');
   const [addCategoryType, setAddCategoryType] = useState('revenue');
   const [showQuickEditor, setShowQuickEditor] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
@@ -277,12 +440,12 @@ const Budget = () => {
 
   // Show empty state if no data
   if (categories.length === 0 && lineItems.length === 0) {
-    return (
-      <div>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Budget & Forecast</h2>
-          <p className="text-gray-600 text-sm mb-6">Add and manage your revenue and cost lines. Expand/collapse groups to focus on what matters. All values are editable.</p>
-        </div>
+  return (
+    <div>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-900">Budget & Forecast</h2>
+        <p className="text-gray-600 text-sm mb-6">Add and manage your revenue and cost lines. Expand/collapse groups to focus on what matters. All values are editable.</p>
+      </div>
 
         <div className="text-center py-12">
           <div className="text-gray-500">
@@ -334,52 +497,63 @@ const Budget = () => {
     <>
       <div>
         {/* Heading and sub-description */}
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Budget & Forecast</h2>
-          <p className="text-gray-600 text-sm mb-6">Add and manage your revenue and cost lines. Expand/collapse groups to focus on what matters. All values are editable.</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-4">
-              <button
-                onClick={() => setActiveTab('budget')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'budget'
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Budget
-              </button>
-              <button
-                onClick={() => setActiveTab('forecast')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'forecast'
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Forecast
-              </button>
-            </nav>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Budget & Forecast</h1>
+            <p className="text-gray-600 mt-1 text-sm">Add and manage your revenue and cost lines. Expand/collapse groups to focus on what matters. All values are editable.</p>
           </div>
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+            style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+          >
+            <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+            Help
+          </button>
         </div>
+      </div>
+      <div>
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-4">
+            <button
+              onClick={() => setActiveTab('budget')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'budget'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Budget
+            </button>
+            <button
+              onClick={() => setActiveTab('forecast')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'forecast'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Forecast
+            </button>
+          </nav>
+        </div>
+      </div>
 
-        {activeTab === 'budget' ? (
-          <>
+      {activeTab === 'budget' ? (
+        <>
             {/* Controls row */}
             <div className="mb-4 flex items-center gap-2 w-full">
-              <button
-                className="px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
+            <button
+              className="px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
                 onClick={() => {
                   console.log('Add Item Clicked');
                   openAddLineItemModal(null);
                 }}
-              >
-                + Add Item
-              </button>
+            >
+              + Add Item
+            </button>
               <button
                 className="px-4 py-2 rounded-md bg-gray-500 text-white text-sm font-semibold hover:bg-gray-700"
                 onClick={() => setShowQuickEditor(true)}
@@ -387,30 +561,30 @@ const Budget = () => {
                 Quick Editor
               </button>
               <div className="ml-auto flex items-center gap-2">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-4 py-2 rounded-md border border-gray-300 focus:ring-purple-500 focus:border-purple-500 text-sm w-32"
-              >
-                {years.map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-4 py-2 rounded-md border border-gray-300 focus:ring-purple-500 focus:border-purple-500 text-sm w-32"
+            >
+              {years.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
                 <div className="flex items-center bg-purple-100 rounded-md p-0.5 shadow-inner">
-                <button
-                  onClick={() => setViewMode('months')}
-                  className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
-                    ${viewMode === 'months' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
-                >
-                  Months
-                </button>
-                <button
-                  onClick={() => setViewMode('quarters')}
-                  className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
-                    ${viewMode === 'quarters' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
-                >
-                  Quarters
-                </button>
+              <button
+                onClick={() => setViewMode('months')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
+                  ${viewMode === 'months' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
+              >
+                Months
+              </button>
+              <button
+                onClick={() => setViewMode('quarters')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
+                  ${viewMode === 'quarters' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
+              >
+                Quarters
+              </button>
                 </div>
               </div>
             </div>
@@ -510,8 +684,8 @@ const Budget = () => {
                     Quarters
                   </button>
                 </div>
-              </div>
             </div>
+          </div>
 
             {/* Forecast Table */}
             <div className="overflow-x-auto">
@@ -656,8 +830,8 @@ const Budget = () => {
                                 <span className="text-base font-bold leading-none text-purple-600">+</span>
                               </button>
                             </div>
-                          </td>
-                          {viewMode === 'months' ? (
+                        </td>
+                        {viewMode === 'months' ? (
                             Array(12).fill(0).map((_, i) => {
                               const total = data.items.reduce((sum, item) => {
                                 if (showBudgetComparison) {
@@ -678,11 +852,11 @@ const Budget = () => {
                                   ) : (
                                     total.toLocaleString()
                                   )}
-                                </td>
+                            </td>
                               );
                             })
-                          ) : (
-                            calculateQuarterlyTotals(Array(12).fill(0).map((_, i) => 
+                        ) : (
+                          calculateQuarterlyTotals(Array(12).fill(0).map((_, i) => 
                               data.items.reduce((sum, item) => {
                                 if (showBudgetComparison) {
                                   return sum + (item.forecast[`month_${i + 1}`] || 0);
@@ -690,7 +864,7 @@ const Budget = () => {
                                   return sum + (item[`month_${i + 1}`] || 0);
                                 }
                               }, 0)
-                            )).map((t, i) => (
+                          )).map((t, i) => (
                               <td key={i} className="px-2 py-1 text-center text-green-900 font-sans">
                                 {showBudgetComparison ? (
                                   <div>
@@ -776,9 +950,9 @@ const Budget = () => {
                                       className="w-20 rounded border-gray-200 text-right px-2 py-1 focus:ring-purple-500 focus:border-purple-500 text-sm"
                                     />
                                   )}
-                                  </td>
-                                ))
-                              ) : (
+                                </td>
+                              ))
+                            ) : (
                               calculateQuarterlyTotals(Array(12).fill(0).map((_, i) => {
                                 if (showBudgetComparison) {
                                   return item.forecast[`month_${i + 1}`] || 0;
@@ -821,9 +995,9 @@ const Budget = () => {
                                 Array.from({length: 12}, (_, i) => item[`month_${i+1}`] || 0).reduce((a, b) => a + b, 0).toLocaleString()
                               )}
                             </td>
-                            </tr>
-                        ))}
-                      </React.Fragment>
+                          </tr>
+                      ))}
+                    </React.Fragment>
                     );
                   })}
                   
@@ -839,7 +1013,7 @@ const Budget = () => {
                         <span className="text-base font-bold leading-none text-purple-600">+</span>
                       </button>
                     </td>
-                      {viewMode === 'months' ? (
+                    {viewMode === 'months' ? (
                       showBudgetComparison ? (
                         (comparisonTotals?.forecast?.expense || Array(12).fill(0)).map((t, i) => (
                           <td key={i} className="px-2 py-1 text-center">
@@ -862,9 +1036,9 @@ const Budget = () => {
                             <div className="text-xs text-gray-500 border-t border-gray-200 pt-1">
                               {calculateQuarterlyTotals(comparisonTotals?.budget?.expense || Array(12).fill(0))[i]?.toLocaleString() || '0'}
                             </div>
-                          </td>
-                        ))
-                      ) : (
+                            </td>
+                          ))
+                        ) : (
                         calculateQuarterlyTotals(totals.expense).map((t, i) => (
                           <td key={i} className="px-2 py-1 text-center text-red-800 font-sans font-bold">{t.toLocaleString()}</td>
                         ))
@@ -882,7 +1056,7 @@ const Budget = () => {
                         totals.expense.reduce((sum, t) => sum + t, 0).toLocaleString()
                       )}
                     </td>
-                    </tr>
+                      </tr>
                   
                   {/* Costs categories and line items - similar structure to revenue but for expenses */}
                   {expandCosts && categories.filter(cat => cat.type === 'expense').map(cat => {
@@ -921,7 +1095,7 @@ const Budget = () => {
                                   <span className="text-base font-bold leading-none text-purple-600">+</span>
                                 </button>
               </div>
-                          </td>
+                                </td>
                           {viewMode === 'months' ? (
                             Array(12).fill(0).map((_, i) => {
                               const total = data.items.reduce((sum, item) => {
@@ -960,16 +1134,16 @@ const Budget = () => {
                               data.items.reduce((sum, item) => sum + Array.from({length: 12}, (_, i) => item[`month_${i+1}`] || 0).reduce((a, b) => a + b, 0), 0).toLocaleString()
                             )}
                           </td>
-                        </tr>
-                      </React.Fragment>
+                          </tr>
+                    </React.Fragment>
                     );
                   })}
                 </tbody>
               </table>
-            </div>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
+    </div>
       <AddBudgetItemModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -986,6 +1160,7 @@ const Budget = () => {
         categories={categories}
         loadBudgetData={loadBudgetData}
       />
+      <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
     </>
   );
 };

@@ -130,7 +130,7 @@ const InvoiceOverview = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg p-6 shadow animate-pulse">
+            <div key={i} className="bg-white rounded p-6 shadow animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
               <div className="h-8 bg-gray-200 rounded w-1/2"></div>
             </div>
@@ -144,7 +144,7 @@ const InvoiceOverview = () => {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-6 shadow">
+        <div className="bg-white rounded p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Outstanding Receivables</p>
@@ -160,7 +160,7 @@ const InvoiceOverview = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow">
+        <div className="bg-white rounded p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Outstanding Payables</p>
@@ -176,7 +176,7 @@ const InvoiceOverview = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow">
+        <div className="bg-white rounded p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Net Cash Flow</p>
@@ -192,7 +192,7 @@ const InvoiceOverview = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow">
+        <div className="bg-white rounded p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Overdue Invoices</p>
@@ -210,7 +210,7 @@ const InvoiceOverview = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Invoice Status Distribution */}
-        <div className="bg-white rounded-lg p-6 shadow">
+        <div className="bg-white rounded p-6 border border-gray-200">
           <h3 className="text-lg font-semibold mb-4">Invoice Status Distribution</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -249,7 +249,7 @@ const InvoiceOverview = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-lg p-6 shadow">
+        <div className="bg-white rounded p-6 border border-gray-200">
           <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
           <div className="space-y-3">
             {recentActivity.length > 0 ? (
@@ -283,7 +283,7 @@ const InvoiceOverview = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg p-6 shadow">
+      <div className="bg-white rounded p-6 border border-gray-200">
         <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { invoiceService } from '../../../services/invoiceService';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -17,16 +19,14 @@ const mockForecastData = [
   { id: 4, type: 'expense', category: 'Marketing', subcategory: 'Digital Ads', values: [-2100, -2200, -2300, -2400, -2500, -2600, -2700, -2800, -2900, -3000, -3100, -3200] },
 ];
 
-const mockInvoices = [
-  { id: 1, client: 'TechCorp Inc', amount: 15000, dueDate: '2024-01-15', status: 'Overdue', daysOverdue: 5 },
-  { id: 2, client: 'StartupXYZ', amount: 8500, dueDate: '2024-01-20', status: 'Due Soon', daysOverdue: 0 },
-  { id: 3, client: 'Enterprise Solutions', amount: 22000, dueDate: '2024-01-25', status: 'Pending', daysOverdue: 0 },
-  { id: 4, client: 'Digital Agency', amount: 12000, dueDate: '2024-01-10', status: 'Overdue', daysOverdue: 10 },
-];
-
 const Overview = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { currentOrganization } = useAuth();
+  const [outstandingInvoices, setOutstandingInvoices] = useState([]);
+  const [receivedInvoices, setReceivedInvoices] = useState([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [invoiceType, setInvoiceType] = useState('sent'); // 'sent' or 'received'
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
@@ -68,6 +68,30 @@ const Overview = () => {
   const cashInflow = budgetTotals.revenue;
   const cashOutflow = Math.abs(budgetTotals.expenses);
   const netCashFlow = cashInflow - cashOutflow;
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      if (!currentOrganization?.organization_id) return;
+      setLoadingInvoices(true);
+      try {
+        if (invoiceType === 'sent') {
+          const invoices = await invoiceService.getSentInvoices(currentOrganization.organization_id, { status: 'all' });
+          const filtered = invoices.filter(inv => ['sent', 'overdue'].includes(inv.status));
+          setOutstandingInvoices(filtered);
+        } else {
+          const invoices = await invoiceService.getReceivedInvoices(currentOrganization.organization_id, { status: 'all' });
+          const filtered = invoices.filter(inv => ['pending', 'scheduled', 'overdue'].includes(inv.status));
+          setReceivedInvoices(filtered);
+        }
+      } catch (e) {
+        setOutstandingInvoices([]);
+        setReceivedInvoices([]);
+      } finally {
+        setLoadingInvoices(false);
+      }
+    };
+    fetchInvoices();
+  }, [currentOrganization, invoiceType]);
 
   return (
     <div className="space-y-6">
@@ -246,12 +270,28 @@ const Overview = () => {
 
       {/* Outstanding Invoices */}
       <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Outstanding Invoices</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-gray-900">Outstanding Invoices</h3>
+          <div className="flex gap-2">
+            <button
+              className={`px-3 py-1 rounded-md text-sm font-medium border ${invoiceType === 'sent' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300'}`}
+              onClick={() => setInvoiceType('sent')}
+            >
+              Invoices Owed To Us
+            </button>
+            <button
+              className={`px-3 py-1 rounded-md text-sm font-medium border ${invoiceType === 'received' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300'}`}
+              onClick={() => setInvoiceType('received')}
+            >
+              Invoices We Owe
+            </button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm border border-gray-200 rounded-lg">
             <thead>
               <tr className="bg-gray-50">
-                <th className="px-3 py-2 text-left font-medium text-gray-500">Client</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-500">{invoiceType === 'sent' ? 'Client' : 'Supplier'}</th>
                 <th className="px-3 py-2 text-right font-medium text-gray-500">Amount</th>
                 <th className="px-3 py-2 text-center font-medium text-gray-500">Due Date</th>
                 <th className="px-3 py-2 text-center font-medium text-gray-500">Status</th>
@@ -259,31 +299,67 @@ const Overview = () => {
               </tr>
             </thead>
             <tbody>
-              {mockInvoices.map((invoice) => (
-                <tr key={invoice.id} className="border-b border-gray-100">
-                  <td className="px-3 py-3 font-medium text-gray-900">{invoice.client}</td>
-                  <td className="px-3 py-3 text-right font-semibold text-gray-900">${invoice.amount.toLocaleString()}</td>
-                  <td className="px-3 py-3 text-center text-gray-600">{invoice.dueDate}</td>
-                  <td className="px-3 py-3 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      invoice.status === 'Overdue' ? 'bg-red-100 text-red-800' :
-                      invoice.status === 'Due Soon' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {invoice.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-center text-gray-600">
-                    {invoice.daysOverdue > 0 ? `${invoice.daysOverdue} days` : '-'}
-                  </td>
-                </tr>
-              ))}
+              {loadingInvoices ? (
+                <tr><td colSpan="5" className="text-center py-8 text-gray-400">Loading...</td></tr>
+              ) : invoiceType === 'sent' ? (
+                outstandingInvoices.length === 0 ? (
+                  <tr><td colSpan="5" className="text-center py-8 text-gray-400">No outstanding invoices</td></tr>
+                ) : outstandingInvoices.map((invoice) => {
+                  const dueDate = new Date(invoice.due_date);
+                  const now = new Date();
+                  const daysOverdue = invoice.status === 'overdue' ? Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24))) : 0;
+                  return (
+                    <tr key={invoice.id} className="border-b border-gray-100">
+                      <td className="px-3 py-3 font-medium text-gray-900">{invoice.client_name}</td>
+                      <td className="px-3 py-3 text-right font-semibold text-gray-900">£{parseFloat(invoice.total_amount).toLocaleString()}</td>
+                      <td className="px-3 py-3 text-center text-gray-600">{dueDate.toLocaleDateString()}</td>
+                      <td className="px-3 py-3 text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {invoice.status === 'overdue' ? 'Overdue' : 'Outstanding'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center text-gray-600">
+                        {daysOverdue > 0 ? `${daysOverdue} days` : '-'}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                receivedInvoices.length === 0 ? (
+                  <tr><td colSpan="5" className="text-center py-8 text-gray-400">No outstanding invoices</td></tr>
+                ) : receivedInvoices.map((invoice) => {
+                  const dueDate = new Date(invoice.due_date);
+                  const now = new Date();
+                  const daysOverdue = invoice.status === 'overdue' ? Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24))) : 0;
+                  return (
+                    <tr key={invoice.id} className="border-b border-gray-100">
+                      <td className="px-3 py-3 font-medium text-gray-900">{invoice.supplier_name}</td>
+                      <td className="px-3 py-3 text-right font-semibold text-gray-900">£{parseFloat(invoice.total_amount).toLocaleString()}</td>
+                      <td className="px-3 py-3 text-center text-gray-600">{dueDate.toLocaleDateString()}</td>
+                      <td className="px-3 py-3 text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {invoice.status === 'overdue' ? 'Overdue' : invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center text-gray-600">
+                        {daysOverdue > 0 ? `${daysOverdue} days` : '-'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 font-semibold">
                 <td className="px-3 py-3 text-gray-900">Total Outstanding</td>
                 <td className="px-3 py-3 text-right text-gray-900">
-                  ${mockInvoices.reduce((sum, invoice) => sum + invoice.amount, 0).toLocaleString()}
+                  £{(invoiceType === 'sent' ? outstandingInvoices : receivedInvoices).reduce((sum, invoice) => sum + parseFloat(invoice.total_amount), 0).toLocaleString()}
                 </td>
                 <td className="px-3 py-3"></td>
                 <td className="px-3 py-3"></td>
