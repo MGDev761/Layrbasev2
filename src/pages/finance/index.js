@@ -22,6 +22,13 @@ const Finance = ({ activeSubTab, onSubTabChange }) => {
             <p className="text-gray-600">Management accounts content coming soon.</p>
           </div>
         );
+      case 'scenario':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900">Scenario Planning</h3>
+            <p className="text-gray-600">Scenario planning content coming soon.</p>
+          </div>
+        );
       default:
         return null;
     }

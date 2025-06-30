@@ -67,6 +67,7 @@ const SideNav = ({
       { id: 'overview', name: 'Overview' },
       { id: 'budget', name: 'Budget & Forecast' },
       { id: 'cashflow', name: 'Cash Flow' },
+      { id: 'scenario', name: 'Scenario Planning' },
       { id: 'invoicing', name: 'Invoicing' },
       { id: 'management', name: 'Management Accounts' },
     ],
@@ -84,7 +85,8 @@ const SideNav = ({
       { id: 'investment', name: 'Investment Planning' },
     ],
     marketing: [
-      { id: 'events', name: 'Events Calendar' },
+      { id: 'events', name: 'Marketing Calendar' },
+      { id: 'content', name: 'Content Tracker' },
       { id: 'brand', name: 'Brand Assets' },
       { id: 'sales', name: 'Sales Collateral' },
     ],
@@ -212,16 +214,16 @@ const SideNav = ({
               </button>
               
               {isExpanded && hasSubsections && (
-                <div className="bg-gray-50 border-l-2 border-gray-200">
+                <div className="bg-gray-50 border-l border-gray-300 ml-4 pl-3">
                   {sectionSubsections[tab.id].map((subsection) => (
                     <Link
                       key={subsection.id}
                       to={`/${tab.id}/${subsection.id}`}
-                      className={`w-full flex items-center px-8 py-2 text-left text-sm transition-colors ${
-                        activeSubTab === subsection.id
+                      className={`w-full flex items-center py-2 text-left text-sm transition-colors px-4
+                        ${activeSubTab === subsection.id
                           ? 'text-purple-700 bg-purple-50'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
+                        }`}
                       style={{ textDecoration: 'none' }}
                     >
                       {subsection.name}

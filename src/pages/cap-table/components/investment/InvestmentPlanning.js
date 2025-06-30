@@ -262,7 +262,7 @@ const InvestmentPlanning = () => {
       </div>
 
       {/* Investment Calculator */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+      <div className="bg-white rounded-lg p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Investment Calculator</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -334,7 +334,7 @@ const InvestmentPlanning = () => {
       </div>
 
       {/* Before/After Cap Table */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg overflow-hidden">
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <h3 className="text-xl font-semibold text-gray-900">Cap Table Impact</h3>
         </div>

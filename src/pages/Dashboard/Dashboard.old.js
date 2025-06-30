@@ -209,7 +209,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-gray-100 min-h-screen">
       {/* Page Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -257,9 +257,9 @@ const Dashboard = () => {
       {/* Financial Overview - Full Width */}
       {dashboardSections.financial && (
         <div>
-          <div className="bg-white rounded-md flex flex-col border border-gray-300">
+          <div className="bg-white rounded-md flex flex-col">
             {/* Top Bar */}
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
               <h2 className="text-base font-semibold text-gray-900">Financial Overview</h2>
               <div className="flex space-x-2">
                 <button className="p-1 rounded hover:bg-gray-200" title="Settings">
@@ -344,9 +344,9 @@ const Dashboard = () => {
         {/* Notifications */}
         {dashboardSections.notifications && (
           <div>
-            <div className="bg-white rounded-md flex flex-col h-[280px] border border-gray-300">
+            <div className="bg-white rounded-md flex flex-col h-[280px]">
               {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg border-b border-gray-100">
+              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
                 <h2 className="text-base font-semibold text-gray-900">Notifications</h2>
                 <div className="flex space-x-2">
                   <button className="p-1 rounded hover:bg-gray-200" title="Settings">
@@ -397,7 +397,7 @@ const Dashboard = () => {
                 )}
               </div>
               {/* Footer */}
-              <div className="px-4 py-2 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-end">
+              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
                 <a href="/notifications" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                   Go to Notifications
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,9 +412,9 @@ const Dashboard = () => {
         {/* Sales Activities */}
         {dashboardSections.salesActivity && (
           <div>
-            <div className="bg-white rounded-md flex flex-col h-[280px] border border-gray-300">
+            <div className="bg-white rounded-md flex flex-col h-[280px]">
               {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg border-b border-gray-100">
+              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
                 <h2 className="text-base font-semibold text-gray-900">Sales Activities</h2>
                 <div className="flex space-x-2">
                   <button className="p-1 rounded hover:bg-gray-200" title="Add Lead">
@@ -473,7 +473,7 @@ const Dashboard = () => {
                 )}
               </div>
               {/* Footer */}
-              <div className="px-4 py-2 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-end">
+              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
                 <a href="/sales/crm" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                   Go to CRM
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,9 +491,9 @@ const Dashboard = () => {
         {/* Marketing Releases */}
         {dashboardSections.marketing && (
           <div>
-            <div className="bg-white rounded-md flex flex-col h-[280px] border border-gray-300">
+            <div className="bg-white rounded-md flex flex-col h-[280px]">
               {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg border-b border-gray-100">
+              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
                 <h2 className="text-base font-semibold text-gray-900">Upcoming Marketing Releases</h2>
                 {/* Options (add, calendar, filter) */}
                 <div className="flex space-x-2">
@@ -562,7 +562,7 @@ const Dashboard = () => {
                 )}
               </div>
               {/* Footer */}
-              <div className="px-4 py-2 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-end">
+              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
                 <a href="/marketing/events" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                   Go to Events Calendar
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -577,9 +577,9 @@ const Dashboard = () => {
         {/* Team Holidays */}
         {dashboardSections.holidays && (
           <div>
-            <div className="bg-white rounded-md flex flex-col h-[280px] border border-gray-300">
+            <div className="bg-white rounded-md flex flex-col h-[280px]">
               {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg border-b border-gray-100">
+              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
                 <h2 className="text-base font-semibold text-gray-900">Team Holidays</h2>
                 <div className="flex space-x-2">
                   <a href="/hr/holiday" className="p-1 rounded hover:bg-gray-200" title="View All">
@@ -638,7 +638,7 @@ const Dashboard = () => {
                 )}
               </div>
               {/* Footer */}
-              <div className="px-4 py-2 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-end">
+              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
                 <a href="/hr/holiday" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                   View all in Time Manager
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

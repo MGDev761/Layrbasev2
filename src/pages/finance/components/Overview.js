@@ -1,23 +1,169 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { invoiceService } from '../../../services/invoiceService';
+import { budgetService } from '../../../services/budgetService';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Mock data - in real app this would come from the budget component
-const mockBudgetData = [
-  { id: 1, type: 'revenue', category: 'Product Sales', subcategory: 'Software Licenses', values: [12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000] },
-  { id: 2, type: 'revenue', category: 'Consulting', subcategory: 'Strategy', values: [4000, 4200, 4300, 4400, 4500, 4600, 4700, 4800, 4900, 5000, 5100, 5200] },
-  { id: 3, type: 'expense', category: 'Salaries', subcategory: 'Engineering', values: [-8000, -8200, -8300, -8400, -8500, -8600, -8700, -8800, -8900, -9000, -9100, -9200] },
-  { id: 4, type: 'expense', category: 'Marketing', subcategory: 'Digital Ads', values: [-2000, -2100, -2200, -2300, -2400, -2500, -2600, -2700, -2800, -2900, -3000, -3100] },
-];
+// Combined Bar + Line Chart Component
+const CashFlowChart = ({ data, currentBalance = 500000, width = 900, height = 320 }) => {
+  if (!data || data.length === 0) return <div className="text-gray-400 text-center py-8">No data available</div>;
 
-const mockForecastData = [
-  { id: 1, type: 'revenue', category: 'Product Sales', subcategory: 'Software Licenses', values: [12500, 13500, 14500, 15500, 16500, 17500, 18500, 19500, 20500, 21500, 22500, 23500] },
-  { id: 2, type: 'revenue', category: 'Consulting', subcategory: 'Strategy', values: [4100, 4300, 4400, 4500, 4600, 4700, 4800, 4900, 5000, 5100, 5200, 5300] },
-  { id: 3, type: 'expense', category: 'Salaries', subcategory: 'Engineering', values: [-8100, -8300, -8400, -8500, -8600, -8700, -8800, -8900, -9000, -9100, -9200, -9300] },
-  { id: 4, type: 'expense', category: 'Marketing', subcategory: 'Digital Ads', values: [-2100, -2200, -2300, -2400, -2500, -2600, -2700, -2800, -2900, -3000, -3100, -3200] },
-];
+  const padding = { top: 40, right: 40, bottom: 50, left: 60 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  // Bar scaling
+  const maxBar = Math.max(...data.map(d => Math.max(d.inflow, d.outflow)), 1);
+
+  // Bar width and spacing
+  const barGroupWidth = chartWidth / data.length;
+  const barWidth = barGroupWidth * 0.28;
+  const barGap = barGroupWidth * 0.08;
+
+  // Remaining cash line (cumulative balance)
+  let runningBalance = currentBalance;
+  const cashPoints = data.map((point, idx) => {
+    runningBalance += point.inflow - point.outflow;
+    return { x: padding.left + barGroupWidth * idx + barGroupWidth / 2,
+             y: padding.top + chartHeight - (runningBalance / currentBalance) * chartHeight,
+             balance: runningBalance };
+  });
+  const cashPath = cashPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+  // For right Y axis (remaining cash)
+  const maxCash = Math.max(currentBalance, ...cashPoints.map(p => p.balance));
+  const minCash = Math.min(currentBalance, ...cashPoints.map(p => p.balance));
+  const cashRange = maxCash - minCash || 1;
+
+  // Recalculate y for cashPoints with correct scaling
+  runningBalance = currentBalance;
+  for (let i = 0; i < cashPoints.length; i++) {
+    runningBalance += data[i].inflow - data[i].outflow;
+    cashPoints[i].y = padding.top + chartHeight - ((cashPoints[i].balance - minCash) / cashRange) * chartHeight;
+  }
+  const cashPathFinal = cashPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+  return (
+    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="w-full">
+      {/* Legend at the top, centered */}
+      <g transform={`translate(${width / 2 - 110}, 12)`}>
+        <rect x="0" y="0" width="16" height="16" fill="#93c5fd" rx="2" />
+        <text x="22" y="13" className="text-sm fill-gray-700">Inflow</text>
+        <rect x="90" y="0" width="16" height="16" fill="#1e3a8a" rx="2" />
+        <text x="112" y="13" className="text-sm fill-gray-700">Outflow</text>
+        <line x1="200" y1="8" x2="216" y2="8" stroke="#8b5cf6" strokeWidth="2.5" />
+        <text x="222" y="13" className="text-sm fill-gray-700">Remaining cash</text>
+      </g>
+      {/* Grid lines */}
+      {[0, 0.25, 0.5, 0.75, 1].map((r, i) => (
+        <line
+          key={i}
+          x1={padding.left}
+          y1={padding.top + r * chartHeight}
+          x2={width - padding.right}
+          y2={padding.top + r * chartHeight}
+          stroke="#e5e7eb"
+        />
+      ))}
+      {/* Bars: Inflow (left bar) */}
+      {data.map((month, idx) => {
+        const x = padding.left + barGroupWidth * idx + barGap;
+        const y = padding.top + chartHeight - (month.inflow / maxBar) * chartHeight;
+        const h = (month.inflow / maxBar) * chartHeight;
+        return (
+          <rect
+            key={`in-${idx}`}
+            x={x}
+            y={y}
+            width={barWidth}
+            height={h}
+            fill="#93c5fd"
+            rx={2}
+          />
+        );
+      })}
+      {/* Bars: Outflow (right bar) */}
+      {data.map((month, idx) => {
+        const x = padding.left + barGroupWidth * idx + barGap + barWidth + barGap;
+        const y = padding.top + chartHeight - (month.outflow / maxBar) * chartHeight;
+        const h = (month.outflow / maxBar) * chartHeight;
+        return (
+          <rect
+            key={`out-${idx}`}
+            x={x}
+            y={y}
+            width={barWidth}
+            height={h}
+            fill="#1e3a8a"
+            rx={2}
+          />
+        );
+      })}
+      {/* Remaining cash line */}
+      <path
+        d={cashPathFinal}
+        stroke="#8b5cf6"
+        strokeWidth="2.5"
+        fill="none"
+      />
+      {/* Remaining cash points */}
+      {cashPoints.map((p, i) => (
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r="3"
+          fill="#8b5cf6"
+          stroke="#fff"
+          strokeWidth="1"
+        />
+      ))}
+      {/* Y axis labels (left, for bars) */}
+      {[0, 0.25, 0.5, 0.75, 1].map((r, i) => {
+        const v = maxBar - r * maxBar;
+        return (
+          <text
+            key={i}
+            x={padding.left - 10}
+            y={padding.top + r * chartHeight + 5}
+            textAnchor="end"
+            className="text-xs fill-gray-500"
+          >
+            {v === 0 ? '0' : `${Math.abs(v) >= 1000 ? (v/1000).toFixed(0) + 'k' : v.toFixed(0)}`}
+          </text>
+        );
+      })}
+      {/* Y axis labels (right, for remaining cash) */}
+      {[0, 0.25, 0.5, 0.75, 1].map((r, i) => {
+        const v = maxCash - r * cashRange;
+        return (
+          <text
+            key={i}
+            x={width - padding.right + 40}
+            y={padding.top + r * chartHeight + 5}
+            textAnchor="start"
+            className="text-xs fill-gray-500"
+          >
+            {v === 0 ? '0' : `${Math.abs(v) >= 1000 ? (v/1000).toFixed(0) + 'k' : v.toFixed(0)}`}
+          </text>
+        );
+      })}
+      {/* X axis labels */}
+      {data.map((month, idx) => (
+        <text
+          key={idx}
+          x={padding.left + barGroupWidth * idx + barGroupWidth / 2}
+          y={height - 18}
+          textAnchor="middle"
+          className="text-xs fill-gray-500"
+        >
+          {month.label}
+        </text>
+      ))}
+    </svg>
+  );
+};
 
 const Overview = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -27,38 +173,67 @@ const Overview = () => {
   const [receivedInvoices, setReceivedInvoices] = useState([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [invoiceType, setInvoiceType] = useState('sent'); // 'sent' or 'received'
+  const [budgetData, setBudgetData] = useState([]);
+  const [forecastData, setForecastData] = useState([]);
+  const [loadingBudget, setLoadingBudget] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
 
+  // Fetch budget and forecast data
+  useEffect(() => {
+    const fetchBudgetData = async () => {
+      if (!currentOrganization?.organization_id) return;
+      
+      setLoadingBudget(true);
+      try {
+        const [budget, forecast] = await Promise.all([
+          budgetService.getBudgetData(currentOrganization.organization_id, selectedYear, false),
+          budgetService.getBudgetData(currentOrganization.organization_id, selectedYear, true)
+        ]);
+        
+        setBudgetData(budget || []);
+        setForecastData(forecast || []);
+      } catch (error) {
+        console.error('Error fetching budget data:', error);
+        setBudgetData([]);
+        setForecastData([]);
+      } finally {
+        setLoadingBudget(false);
+      }
+    };
+
+    fetchBudgetData();
+  }, [currentOrganization?.organization_id, selectedYear]);
+
   // Group data by category
   const groupDataByCategory = (data) => {
     return data.reduce((acc, row) => {
-      const [category, subcategory] = row.label ? row.label.split(' - ') : [row.category, row.subcategory];
-      if (!acc[category]) {
-        acc[category] = { type: row.type, subcategories: {} };
+      const categoryName = row.category_name || 'Uncategorized';
+      if (!acc[categoryName]) {
+        acc[categoryName] = { type: row.type, subcategories: {} };
       }
-      if (!acc[category].subcategories[subcategory]) {
-        acc[category].subcategories[subcategory] = [];
+      if (!acc[categoryName].subcategories[row.line_item_name]) {
+        acc[categoryName].subcategories[row.line_item_name] = [];
       }
-      acc[category].subcategories[subcategory].push(row);
+      acc[categoryName].subcategories[row.line_item_name].push(row);
       return acc;
     }, {});
   };
 
-  const budgetGrouped = groupDataByCategory(mockBudgetData);
-  const forecastGrouped = groupDataByCategory(mockForecastData);
+  const budgetGrouped = groupDataByCategory(budgetData);
+  const forecastGrouped = groupDataByCategory(forecastData);
 
   // Calculate totals for selected month
   const calculateMonthTotals = (data, monthIndex) => {
-    const revenue = data.filter(row => row.type === 'revenue').reduce((sum, row) => sum + row.values[monthIndex], 0);
-    const expenses = data.filter(row => row.type === 'expense').reduce((sum, row) => sum + row.values[monthIndex], 0);
-    return { revenue, expenses, profit: revenue + expenses };
+    const revenue = data.filter(row => row.type === 'revenue').reduce((sum, row) => sum + (row[`month_${monthIndex + 1}`] || 0), 0);
+    const expenses = data.filter(row => row.type === 'expense').reduce((sum, row) => sum + Math.abs(row[`month_${monthIndex + 1}`] || 0), 0);
+    return { revenue, expenses, profit: revenue - expenses };
   };
 
-  const budgetTotals = calculateMonthTotals(mockBudgetData, selectedMonth);
-  const forecastTotals = calculateMonthTotals(mockForecastData, selectedMonth);
-  const previousMonthTotals = calculateMonthTotals(mockBudgetData, Math.max(0, selectedMonth - 1));
+  const budgetTotals = calculateMonthTotals(budgetData, selectedMonth);
+  const forecastTotals = calculateMonthTotals(forecastData, selectedMonth);
+  const previousMonthForecastTotals = calculateMonthTotals(forecastData, Math.max(0, selectedMonth - 1));
 
   // Calculate burn rate (monthly cash burn)
   const monthlyBurnRate = Math.abs(budgetTotals.expenses);
@@ -68,6 +243,23 @@ const Overview = () => {
   const cashInflow = budgetTotals.revenue;
   const cashOutflow = Math.abs(budgetTotals.expenses);
   const netCashFlow = cashInflow - cashOutflow;
+
+  // Calculate cash flow data for chart
+  const generateCashFlowData = () => {
+    const data = [];
+    for (let i = 0; i < 12; i++) {
+      const monthData = calculateMonthTotals(budgetData, i);
+      data.push({
+        label: months[i],
+        inflow: monthData.revenue,
+        outflow: monthData.expenses,
+        net: monthData.revenue - monthData.expenses
+      });
+    }
+    return data;
+  };
+
+  const cashFlowData = generateCashFlowData();
 
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -126,143 +318,129 @@ const Overview = () => {
       {/* Budget vs Forecast Comparison */}
       <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Budget vs Forecast - {months[selectedMonth]} {selectedYear}</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm border border-gray-200 rounded-lg">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-3 py-2 text-left font-medium text-gray-500 w-40">Line</th>
-                <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Budget</th>
-                <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Forecast</th>
-                <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Variance</th>
-                <th className="px-3 py-2 text-center font-medium text-gray-500 border-l-4 border-gray-300">Previous Year</th>
-                <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">YoY Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Revenue */}
-              <tr className="bg-green-100">
-                <td className="px-3 py-2 font-bold text-green-800">Revenue</td>
-                <td className="px-2 py-1 text-center text-green-800 font-semibold border-l">{budgetTotals.revenue.toLocaleString()}</td>
-                <td className="px-2 py-1 text-center text-green-800 font-semibold border-l">{forecastTotals.revenue.toLocaleString()}</td>
-                <td className={`px-2 py-1 text-center font-semibold border-l ${forecastTotals.revenue >= budgetTotals.revenue ? 'text-green-600' : 'text-red-600'}`}>
-                  {((forecastTotals.revenue - budgetTotals.revenue) / budgetTotals.revenue * 100).toFixed(1)}%
-                </td>
-                <td className="px-2 py-1 text-center text-green-800 font-semibold border-l-4 border-gray-300">{(budgetTotals.revenue * 0.85).toLocaleString()}</td>
-                <td className={`px-2 py-1 text-center font-semibold border-l ${budgetTotals.revenue >= budgetTotals.revenue * 0.85 ? 'text-green-600' : 'text-red-600'}`}>
-                  {((budgetTotals.revenue - budgetTotals.revenue * 0.85) / (budgetTotals.revenue * 0.85) * 100).toFixed(1)}%
-                </td>
-              </tr>
-              {Object.entries(budgetGrouped).filter(([category, data]) => data.type === 'revenue').map(([category, data]) => (
-                <tr key={category} className="bg-green-50">
-                  <td className="px-3 py-2 font-medium text-green-900 pl-8">{category}</td>
-                  <td className="px-2 py-1 text-center text-green-900 border-l">
-                    {Object.values(data.subcategories).flat().reduce((sum, row) => sum + row.values[selectedMonth], 0).toLocaleString()}
-                  </td>
-                  <td className="px-2 py-1 text-center text-green-900 border-l">
-                    {Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + row.values[selectedMonth], 0).toLocaleString()}
-                  </td>
-                  <td className="px-2 py-1 text-center text-gray-600 border-l">-</td>
-                  <td className="px-2 py-1 text-center text-green-900 border-l-4 border-gray-300">
-                    {(Object.values(data.subcategories).flat().reduce((sum, row) => sum + row.values[selectedMonth], 0) * 0.85).toLocaleString()}
-                  </td>
-                  <td className="px-2 py-1 text-center text-gray-600 border-l">-</td>
+        {loadingBudget ? (
+          <div className="text-center py-8 text-gray-400">Loading budget data...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm border border-gray-200 rounded-lg">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-3 py-2 text-left font-medium text-gray-500 w-40">Line</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Budget</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Forecast</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Variance</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l-4 border-gray-300">Last Month</th>
+                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">MoM Change</th>
                 </tr>
-              ))}
-              {/* Expenses */}
-              <tr className="bg-red-100">
-                <td className="px-3 py-2 font-bold text-red-800">Expenses</td>
-                <td className="px-2 py-1 text-center text-red-800 font-semibold border-l">{Math.abs(budgetTotals.expenses).toLocaleString()}</td>
-                <td className="px-2 py-1 text-center text-red-800 font-semibold border-l">{Math.abs(forecastTotals.expenses).toLocaleString()}</td>
-                <td className={`px-2 py-1 text-center font-semibold border-l ${Math.abs(forecastTotals.expenses) <= Math.abs(budgetTotals.expenses) ? 'text-green-600' : 'text-red-600'}`}>
-                  {((Math.abs(forecastTotals.expenses) - Math.abs(budgetTotals.expenses)) / Math.abs(budgetTotals.expenses) * 100).toFixed(1)}%
-                </td>
-                <td className="px-2 py-1 text-center text-red-800 font-semibold border-l-4 border-gray-300">{(Math.abs(budgetTotals.expenses) * 0.9).toLocaleString()}</td>
-                <td className={`px-2 py-1 text-center font-semibold border-l ${Math.abs(budgetTotals.expenses) <= Math.abs(budgetTotals.expenses) * 0.9 ? 'text-green-600' : 'text-red-600'}`}>
-                  {((Math.abs(budgetTotals.expenses) - Math.abs(budgetTotals.expenses) * 0.9) / (Math.abs(budgetTotals.expenses) * 0.9) * 100).toFixed(1)}%
-                </td>
-              </tr>
-              {Object.entries(budgetGrouped).filter(([category, data]) => data.type === 'expense').map(([category, data]) => (
-                <tr key={category} className="bg-red-50">
-                  <td className="px-3 py-2 font-medium text-red-900 pl-8">{category}</td>
-                  <td className="px-2 py-1 text-center text-red-900 border-l">
-                    {Math.abs(Object.values(data.subcategories).flat().reduce((sum, row) => sum + row.values[selectedMonth], 0)).toLocaleString()}
+              </thead>
+              <tbody>
+                {/* Revenue */}
+                <tr className="bg-green-100">
+                  <td className="px-3 py-2 font-bold text-green-800">Revenue</td>
+                  <td className="px-2 py-1 text-center text-green-800 font-semibold border-l">{budgetTotals.revenue.toLocaleString()}</td>
+                  <td className="px-2 py-1 text-center text-green-800 font-semibold border-l">{forecastTotals.revenue.toLocaleString()}</td>
+                  <td className={`px-2 py-1 text-center font-semibold border-l ${forecastTotals.revenue >= budgetTotals.revenue ? 'text-green-600' : 'text-red-600'}`}>
+                    {budgetTotals.revenue > 0 ? ((forecastTotals.revenue - budgetTotals.revenue) / budgetTotals.revenue * 100).toFixed(1) : 0}%
                   </td>
-                  <td className="px-2 py-1 text-center text-red-900 border-l">
-                    {Math.abs(Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + row.values[selectedMonth], 0)).toLocaleString()}
+                  <td className="px-2 py-1 text-center text-green-800 font-semibold border-l-4 border-gray-300">{previousMonthForecastTotals.revenue.toLocaleString()}</td>
+                  <td className={`px-2 py-1 text-center font-semibold border-l ${forecastTotals.revenue >= previousMonthForecastTotals.revenue ? 'text-green-600' : 'text-red-600'}`}>
+                    {previousMonthForecastTotals.revenue > 0 ? ((forecastTotals.revenue - previousMonthForecastTotals.revenue) / previousMonthForecastTotals.revenue * 100).toFixed(1) : 0}%
                   </td>
-                  <td className="px-2 py-1 text-center text-gray-600 border-l">-</td>
-                  <td className="px-2 py-1 text-center text-red-900 border-l-4 border-gray-300">
-                    {(Math.abs(Object.values(data.subcategories).flat().reduce((sum, row) => sum + row.values[selectedMonth], 0)) * 0.9).toLocaleString()}
-                  </td>
-                  <td className="px-2 py-1 text-center text-gray-600 border-l">-</td>
                 </tr>
-              ))}
-              {/* Profit/Loss */}
-              <tr className="bg-blue-100 font-bold">
-                <td className="px-3 py-2 text-blue-900">Profit / Loss</td>
-                <td className="px-2 py-1 text-center text-blue-900 border-l">{budgetTotals.profit.toLocaleString()}</td>
-                <td className="px-2 py-1 text-center text-blue-900 border-l">{forecastTotals.profit.toLocaleString()}</td>
-                <td className={`px-2 py-1 text-center border-l ${forecastTotals.profit >= budgetTotals.profit ? 'text-green-600' : 'text-red-600'}`}>
-                  {((forecastTotals.profit - budgetTotals.profit) / Math.abs(budgetTotals.profit) * 100).toFixed(1)}%
-                </td>
-                <td className="px-2 py-1 text-center text-blue-900 border-l-4 border-gray-300">{(budgetTotals.profit * 0.8).toLocaleString()}</td>
-                <td className={`px-2 py-1 text-center border-l ${budgetTotals.profit >= budgetTotals.profit * 0.8 ? 'text-green-600' : 'text-red-600'}`}>
-                  {((budgetTotals.profit - budgetTotals.profit * 0.8) / Math.abs(budgetTotals.profit * 0.8) * 100).toFixed(1)}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                {Object.entries(budgetGrouped).filter(([category, data]) => data.type === 'revenue').map(([category, data]) => {
+                  const budgetAmount = Object.values(data.subcategories).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0);
+                  const forecastAmount = Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0);
+                  const previousForecastAmount = Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth}`] || 0), 0);
+                  return (
+                    <tr key={category} className="bg-green-50">
+                      <td className="px-3 py-2 font-medium text-green-900 pl-8">{category}</td>
+                      <td className="px-2 py-1 text-center text-green-900 border-l">{budgetAmount.toLocaleString()}</td>
+                      <td className="px-2 py-1 text-center text-green-900 border-l">{forecastAmount.toLocaleString()}</td>
+                      <td className="px-2 py-1 text-center text-gray-600 border-l">
+                        {budgetAmount > 0 ? ((forecastAmount - budgetAmount) / budgetAmount * 100).toFixed(1) : 0}%
+                      </td>
+                      <td className="px-2 py-1 text-center text-green-900 border-l-4 border-gray-300">{previousForecastAmount.toLocaleString()}</td>
+                      <td className="px-2 py-1 text-center text-gray-600 border-l">
+                        {previousForecastAmount > 0 ? ((forecastAmount - previousForecastAmount) / previousForecastAmount * 100).toFixed(1) : 0}%
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Expenses */}
+                <tr className="bg-red-100">
+                  <td className="px-3 py-2 font-bold text-red-800">Expenses</td>
+                  <td className="px-2 py-1 text-center text-red-800 font-semibold border-l">{Math.abs(budgetTotals.expenses).toLocaleString()}</td>
+                  <td className="px-2 py-1 text-center text-red-800 font-semibold border-l">{Math.abs(forecastTotals.expenses).toLocaleString()}</td>
+                  <td className={`px-2 py-1 text-center font-semibold border-l ${Math.abs(forecastTotals.expenses) <= Math.abs(budgetTotals.expenses) ? 'text-green-600' : 'text-red-600'}`}>
+                    {budgetTotals.expenses > 0 ? ((Math.abs(forecastTotals.expenses) - Math.abs(budgetTotals.expenses)) / Math.abs(budgetTotals.expenses) * 100).toFixed(1) : 0}%
+                  </td>
+                  <td className="px-2 py-1 text-center text-red-800 font-semibold border-l-4 border-gray-300">{Math.abs(previousMonthForecastTotals.expenses).toLocaleString()}</td>
+                  <td className={`px-2 py-1 text-center font-semibold border-l ${Math.abs(forecastTotals.expenses) <= Math.abs(previousMonthForecastTotals.expenses) ? 'text-green-600' : 'text-red-600'}`}>
+                    {previousMonthForecastTotals.expenses > 0 ? ((Math.abs(forecastTotals.expenses) - Math.abs(previousMonthForecastTotals.expenses)) / Math.abs(previousMonthForecastTotals.expenses) * 100).toFixed(1) : 0}%
+                  </td>
+                </tr>
+                {Object.entries(budgetGrouped).filter(([category, data]) => data.type === 'expense').map(([category, data]) => {
+                  const budgetAmount = Math.abs(Object.values(data.subcategories).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0));
+                  const forecastAmount = Math.abs(Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0));
+                  const previousForecastAmount = Math.abs(Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth}`] || 0), 0));
+                  return (
+                    <tr key={category} className="bg-red-50">
+                      <td className="px-3 py-2 font-medium text-red-900 pl-8">{category}</td>
+                      <td className="px-2 py-1 text-center text-red-900 border-l">{budgetAmount.toLocaleString()}</td>
+                      <td className="px-2 py-1 text-center text-red-900 border-l">{forecastAmount.toLocaleString()}</td>
+                      <td className="px-2 py-1 text-center text-gray-600 border-l">
+                        {budgetAmount > 0 ? ((forecastAmount - budgetAmount) / budgetAmount * 100).toFixed(1) : 0}%
+                      </td>
+                      <td className="px-2 py-1 text-center text-red-900 border-l-4 border-gray-300">{previousForecastAmount.toLocaleString()}</td>
+                      <td className="px-2 py-1 text-center text-gray-600 border-l">
+                        {previousForecastAmount > 0 ? ((forecastAmount - previousForecastAmount) / previousForecastAmount * 100).toFixed(1) : 0}%
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Profit/Loss */}
+                <tr className="bg-blue-100 font-bold">
+                  <td className="px-3 py-2 text-blue-900">Profit / Loss</td>
+                  <td className="px-2 py-1 text-center text-blue-900 border-l">{budgetTotals.profit.toLocaleString()}</td>
+                  <td className="px-2 py-1 text-center text-blue-900 border-l">{forecastTotals.profit.toLocaleString()}</td>
+                  <td className={`px-2 py-1 text-center border-l ${forecastTotals.profit >= budgetTotals.profit ? 'text-green-600' : 'text-red-600'}`}>
+                    {Math.abs(budgetTotals.profit) > 0 ? ((forecastTotals.profit - budgetTotals.profit) / Math.abs(budgetTotals.profit) * 100).toFixed(1) : 0}%
+                  </td>
+                  <td className="px-2 py-1 text-center text-blue-900 border-l-4 border-gray-300">{previousMonthForecastTotals.profit.toLocaleString()}</td>
+                  <td className={`px-2 py-1 text-center border-l ${forecastTotals.profit >= previousMonthForecastTotals.profit ? 'text-green-600' : 'text-red-600'}`}>
+                    {Math.abs(previousMonthForecastTotals.profit) > 0 ? ((forecastTotals.profit - previousMonthForecastTotals.profit) / Math.abs(previousMonthForecastTotals.profit) * 100).toFixed(1) : 0}%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Burn Rate and Cash Flow Analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Burn Rate */}
-        <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Burn Rate Analysis</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Monthly Burn Rate</span>
-              <span className="text-2xl font-bold text-red-600">${monthlyBurnRate.toLocaleString()}</span>
+      <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6">Cash Flow & Burn Rate Analysis</h3>
+        
+        <div className="flex flex-col md:flex-row gap-8 items-stretch">
+          {/* Metrics stacked left, smaller, in a card with grey bg, no border */}
+          <div className="flex flex-col justify-start gap-4 min-w-[180px] max-w-[220px] bg-gray-50 rounded-lg p-4">
+            <div className="text-left">
+              <div className="text-lg font-semibold text-blue-900">£{(500000).toLocaleString()}</div>
+              <div className="text-xs text-gray-600">Cash Balance</div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Runway (Months)</span>
-              <span className="text-2xl font-bold text-blue-600">{runwayMonths.toFixed(1)}</span>
+            <div className="text-left">
+              <div className="text-lg font-semibold text-red-700">£{monthlyBurnRate.toLocaleString()}</div>
+              <div className="text-xs text-gray-600">Burn Rate</div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Cash Balance</span>
-              <span className="text-2xl font-bold text-green-600">$500,000</span>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-600">
-                At current burn rate, you have approximately <strong>{runwayMonths.toFixed(1)} months</strong> of runway remaining.
-              </p>
+            <div className="text-left">
+              <div className="text-lg font-semibold text-green-700">{runwayMonths.toFixed(1)}</div>
+              <div className="text-xs text-gray-600">Runway (Months)</div>
             </div>
           </div>
-        </div>
-
-        {/* Cash Flow */}
-        <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Cash Flow Analysis</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Cash Inflow</span>
-              <span className="text-2xl font-bold text-green-600">${cashInflow.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Cash Outflow</span>
-              <span className="text-2xl font-bold text-red-600">${cashOutflow.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center border-t pt-2">
-              <span className="text-gray-600 font-semibold">Net Cash Flow</span>
-              <span className={`text-2xl font-bold ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${netCashFlow.toLocaleString()}
-              </span>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-600">
-                {netCashFlow >= 0 ? 'Positive cash flow this month.' : 'Negative cash flow this month.'}
-              </p>
+          {/* Chart right, no heading */}
+          <div className="flex-1">
+            <div className="bg-white rounded-lg p-2 shadow-sm">
+              <CashFlowChart data={cashFlowData} currentBalance={500000} />
             </div>
           </div>
         </div>

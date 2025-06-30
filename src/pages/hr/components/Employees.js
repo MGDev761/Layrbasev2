@@ -81,6 +81,7 @@ const Employees = () => {
   const [profileTeam, setProfileTeam] = useState([]);
   const [profileActivity, setProfileActivity] = useState([]);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch employees
   const loadEmployees = () => {
@@ -262,12 +263,19 @@ const Employees = () => {
     return age;
   };
 
+  const filteredEmployees = employees.filter(employee =>
+    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.department?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2 mt-2">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Employees</h1>
-          <p className="text-gray-600 text-sm mb-6">Manage your organization's employees, onboarding, and roles.</p>
+          <p className="text-gray-600 text-sm mb-2">Manage your organization's employees, onboarding, and roles.</p>
         </div>
         <button
           onClick={() => setShowHelpModal(true)}
@@ -279,71 +287,105 @@ const Employees = () => {
         </button>
       </div>
       <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+      
       {/* Tabs */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-          <button
-            onClick={() => setView('table')}
-            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              view === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            Table View
-          </button>
-          <button
-            onClick={() => setView('orgchart')}
-            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              view === 'orgchart' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Org Chart
-          </button>
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setView('table')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                view === 'table'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Table View
+            </button>
+            <button
+              onClick={() => setView('orgchart')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                view === 'orgchart'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Org Chart
+            </button>
+          </nav>
         </div>
-
-        <button onClick={() => openModal()} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-          Add Employee
-        </button>
       </div>
 
       {view === 'table' ? (
-        <div className="overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Employee
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Position & Department
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Manager
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Start Date
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contract
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Holiday
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Linked User
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {employees.map((employee) => (
+        <div>
+          {/* Actions Bar - now visually attached to table */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-4 pt-4 pb-2 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <svg className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
+                />
+              </div>
+            </div>
+            <button onClick={() => openModal()} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700">
+              Add Employee
+            </button>
+          </div>
+
+          {/* Table Container - flat, no border/shadow, rounded bottom only */}
+          <div className="bg-white rounded-b-md overflow-visible">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Employee
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Position & Department
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Manager
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Start Date
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contract
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Holiday
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Linked User
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-16">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <p className="text-gray-500 text-sm">No employees found</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => openProfileModal(employee)}>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center">
@@ -405,10 +447,12 @@ const Employees = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
         </div>
+      </div>
       ) : (
         <OrgChart />
       )}

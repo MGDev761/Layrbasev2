@@ -1,19 +1,22 @@
 import React from 'react';
-import EventsCalendar from './components/events/EventsCalendar';
+import MarketingCalendar from './components/events/EventsCalendar';
 import BrandAssets from './components/brand/BrandAssets';
 import SalesCollateral from './components/SalesCollateral';
+import ContentTracker from './components/content/ContentTracker';
 
 const Marketing = ({ activeSubTab, onSubTabChange }) => {
   const renderContent = () => {
     switch (activeSubTab) {
       case 'events':
-        return <EventsCalendar />;
+        return <MarketingCalendar />;
       case 'brand':
         return <BrandAssets />;
       case 'sales':
         return <SalesCollateral />;
+      case 'content':
+        return <ContentTracker />;
       default:
-        return <EventsCalendar />;
+        return <MarketingCalendar />;
     }
   };
 

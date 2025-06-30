@@ -112,63 +112,75 @@ export const budgetService = {
     if (error) throw error;
   },
 
-  // Budget Data
-  async getBudgetData(organizationId, year, isForecast = false) {
+  // Budget Data - Updated for new schema
+  async getBudgetData(organizationId, year, dataType = 'all') {
     const { data, error } = await supabase
       .rpc('get_budget_summary', {
         p_organization_id: organizationId,
         p_year: year,
-        p_is_forecast: isForecast
+        p_data_type: dataType
       });
     
     if (error) throw error;
     return data;
   },
 
-  async updateBudgetValue(organizationId, lineItemId, year, month, amount, isForecast = false) {
+  async updateBudgetValue(organizationId, lineItemId, year, month, amount, dataType = 'budget') {
     // First try to update existing record
-    const { data: updateData, error: updateError } = await supabase
+    const updateData = {};
+    if (dataType === 'budget') {
+      updateData.budget_amount = amount;
+    } else if (dataType === 'forecast') {
+      updateData.forecast_amount = amount;
+    } else if (dataType === 'actuals') {
+      updateData.actual_amount = amount;
+    }
+
+    const { data: updateResult, error: updateError } = await supabase
       .from('budget_data')
-      .update({ amount, updated_at: new Date().toISOString() })
+      .update({ ...updateData, updated_at: new Date().toISOString() })
       .eq('organization_id', organizationId)
       .eq('line_item_id', lineItemId)
       .eq('year', year)
       .eq('month', month)
-      .eq('is_forecast', isForecast)
       .select()
       .single();
 
     if (updateError && updateError.code === 'PGRST116') {
       // Record doesn't exist, create it
-      const { data: insertData, error: insertError } = await supabase
+      const insertData = {
+        organization_id: organizationId,
+        line_item_id: lineItemId,
+        year,
+        month,
+        budget_amount: dataType === 'budget' ? amount : 0,
+        forecast_amount: dataType === 'forecast' ? amount : 0,
+        actual_amount: dataType === 'actuals' ? amount : 0
+      };
+
+      const { data: insertResult, error: insertError } = await supabase
         .from('budget_data')
-        .insert({
-          organization_id: organizationId,
-          line_item_id: lineItemId,
-          year,
-          month,
-          amount,
-          is_forecast: isForecast
-        })
+        .insert(insertData)
         .select()
         .single();
       
       if (insertError) throw insertError;
-      return insertData;
+      return insertResult;
     }
     
     if (updateError) throw updateError;
-    return updateData;
+    return updateResult;
   },
 
-  async bulkUpdateBudgetValues(organizationId, lineItemId, year, values, isForecast = false) {
+  async bulkUpdateBudgetValues(organizationId, lineItemId, year, values, dataType = 'budget') {
     const budgetData = values.map((amount, index) => ({
       organization_id: organizationId,
       line_item_id: lineItemId,
       year,
       month: index + 1,
-      amount,
-      is_forecast: isForecast
+      budget_amount: dataType === 'budget' ? amount : 0,
+      forecast_amount: dataType === 'forecast' ? amount : 0,
+      actual_amount: dataType === 'actuals' ? amount : 0
     }));
 
     // Delete existing data for this line item and year
@@ -177,8 +189,7 @@ export const budgetService = {
       .delete()
       .eq('organization_id', organizationId)
       .eq('line_item_id', lineItemId)
-      .eq('year', year)
-      .eq('is_forecast', isForecast);
+      .eq('year', year);
 
     // Insert new data
     const { data, error } = await supabase
@@ -190,7 +201,7 @@ export const budgetService = {
     return data;
   },
 
-  // Versions
+  // Versions - Updated for new schema
   async getVersions(organizationId, year) {
     const { data, error } = await supabase
       .from('budget_versions')
@@ -203,14 +214,14 @@ export const budgetService = {
     return data;
   },
 
-  async createVersion(organizationId, year, versionName, isForecast = false, createdBy) {
+  async createVersion(organizationId, year, versionName, versionType = 'budget', createdBy) {
     const { data, error } = await supabase
       .from('budget_versions')
       .insert({
         organization_id: organizationId,
         year,
         version_name: versionName,
-        is_forecast: isForecast,
+        version_type: versionType,
         created_by: createdBy
       })
       .select()
@@ -220,273 +231,215 @@ export const budgetService = {
     return data;
   },
 
-  async lockVersion(versionId, isLocked) {
-    const { data, error } = await supabase
-      .from('budget_versions')
-      .update({ is_locked: isLocked })
-      .eq('id', versionId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Helper functions
-  async initializeBudgetForYear(organizationId, year, isForecast = false) {
-    // Get all active line items
-    const lineItems = await this.getLineItems(organizationId);
-    
-    // Create budget data entries for each line item
-    const budgetData = [];
-    lineItems.forEach(item => {
-      for (let month = 1; month <= 12; month++) {
-        budgetData.push({
-          organization_id: organizationId,
-          line_item_id: item.id,
-          year,
-          month,
-          amount: 0,
-          is_forecast: isForecast
-        });
+  // Lock a version (budget only, forecast should always be editable)
+  async lockVersion(organizationId, year, versionType = 'budget', isLocked = true) {
+    try {
+      let lockedBy = null;
+      if (isLocked) {
+        const user = (await supabase.auth.getUser()).data.user;
+        lockedBy = user && user.id ? user.id : null;
       }
-    });
+      // Only add locked_by if locking and it's a valid UUID
+      const updateObj = {
+        is_locked: isLocked,
+        locked_at: isLocked ? new Date().toISOString() : null,
+      };
+      if (
+        isLocked &&
+        typeof lockedBy === 'string' &&
+        lockedBy.length === 36 &&
+        lockedBy !== 'undefined'
+      ) {
+        updateObj.locked_by = lockedBy;
+      }
+      console.log('PATCH updateObj:', updateObj);
+      const { data, error } = await supabase
+        .from('budget_versions')
+        .update(updateObj)
+        .eq('organization_id', organizationId)
+        .eq('year', year)
+        .eq('version_type', versionType)
+        .select();
 
-    if (budgetData.length > 0) {
-      const { error } = await supabase
-        .from('budget_data')
-        .upsert(budgetData, { onConflict: 'organization_id,line_item_id,year,month,is_forecast' });
-      
       if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error locking version:', error);
+      throw error;
     }
   },
 
-  // Get summary statistics
-  async getBudgetSummary(organizationId, year, isForecast = false) {
-    const budgetData = await this.getBudgetData(organizationId, year, isForecast);
-    
-    const summary = {
-      totalRevenue: 0,
-      totalExpenses: 0,
-      netIncome: 0,
-      revenueItems: 0,
-      expenseItems: 0
-    };
+  // Create forecast from budget
+  async createForecastFromBudget(organizationId, year) {
+    try {
+      const { data, error } = await supabase
+        .rpc('create_forecast_from_budget', {
+          p_organization_id: organizationId,
+          p_year: year
+        });
 
-    budgetData.forEach(item => {
-      const total = item.total || 0;
-      if (item.type === 'revenue') {
-        summary.totalRevenue += total;
-        summary.revenueItems++;
-      } else {
-        summary.totalExpenses += Math.abs(total);
-        summary.expenseItems++;
-      }
-    });
-
-    summary.netIncome = summary.totalRevenue - summary.totalExpenses;
-    return summary;
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating forecast from budget:', error);
+      throw error;
+    }
   },
 
-  // Create sample data for testing
+  // Initialize budget for a year
+  async initializeBudgetForYear(organizationId, year, versionType = 'budget') {
+    try {
+      // Create version
+      const version = await this.createVersion(
+        organizationId, 
+        year, 
+        `${versionType.charAt(0).toUpperCase() + versionType.slice(1)} ${year}`, 
+        versionType,
+        (await supabase.auth.getUser()).data.user?.id
+      );
+
+      // Initialize budget data for all line items
+      const lineItems = await this.getLineItems(organizationId);
+      const budgetData = [];
+
+      lineItems.forEach(item => {
+        for (let month = 1; month <= 12; month++) {
+          budgetData.push({
+            organization_id: organizationId,
+            line_item_id: item.id,
+            year,
+            month,
+            budget_amount: versionType === 'budget' ? 0 : 0,
+            forecast_amount: versionType === 'forecast' ? 0 : 0,
+            actual_amount: 0
+          });
+        }
+      });
+
+      if (budgetData.length > 0) {
+        const { error } = await supabase
+          .from('budget_data')
+          .insert(budgetData);
+
+        if (error) throw error;
+      }
+
+      return version;
+    } catch (error) {
+      console.error('Error initializing budget for year:', error);
+      throw error;
+    }
+  },
+
+  // Get budget summary
+  async getBudgetSummary(organizationId, year, dataType = 'all') {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_budget_summary', {
+          p_organization_id: organizationId,
+          p_year: year,
+          p_data_type: dataType
+        });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting budget summary:', error);
+      throw error;
+    }
+  },
+
+  // Create sample data
   async createSampleData(organizationId) {
     try {
-      // Always create these categories and line items for the template
-      const revenueCategory = await this.createCategory(organizationId, {
-        name: 'Revenue',
-        type: 'revenue',
-        description: 'All revenue streams',
-        color: '#10B981'
-      });
+      const currentYear = new Date().getFullYear();
+      
+      // Create sample categories
+      const categories = [
+        { name: 'Sales Revenue', type: 'revenue', description: 'Revenue from product sales', color: '#10B981' },
+        { name: 'Subscription Revenue', type: 'revenue', description: 'Monthly subscription revenue', color: '#059669' },
+        { name: 'Personnel Costs', type: 'expense', description: 'Salaries and benefits', color: '#DC2626' },
+        { name: 'Office & Admin', type: 'expense', description: 'Office rent and utilities', color: '#B91C1C' },
+        { name: 'Marketing & Sales', type: 'expense', description: 'Marketing campaigns and sales activities', color: '#991B1B' }
+      ];
 
-      const productSalesCategory = await this.createCategory(organizationId, {
-        name: 'Product Sales',
-        type: 'revenue',
-        description: 'Revenue from product sales',
-        color: '#3B82F6'
-      });
+      const createdCategories = [];
+      for (const category of categories) {
+        const created = await this.createCategory(organizationId, category);
+        createdCategories.push(created);
+      }
 
-      const consultingCategory = await this.createCategory(organizationId, {
-        name: 'Consulting',
-        type: 'revenue',
-        description: 'Revenue from consulting services',
-        color: '#6366F1'
-      });
+      // Create sample line items
+      const lineItems = [
+        { categoryId: createdCategories[0].id, name: 'Product Sales', type: 'revenue', isRecurring: true },
+        { categoryId: createdCategories[1].id, name: 'SaaS Subscriptions', type: 'revenue', isRecurring: true },
+        { categoryId: createdCategories[2].id, name: 'Developer Salaries', type: 'expense', isRecurring: true },
+        { categoryId: createdCategories[2].id, name: 'Sales Team Salaries', type: 'expense', isRecurring: true },
+        { categoryId: createdCategories[3].id, name: 'Office Rent', type: 'expense', isRecurring: true },
+        { categoryId: createdCategories[4].id, name: 'Digital Marketing', type: 'expense', isRecurring: true }
+      ];
 
-      // Add a Sales line under Revenue
-      const salesLine = await this.createLineItem(organizationId, {
-        categoryId: revenueCategory.id,
-        name: 'Sales',
-        description: 'Sales revenue',
-        type: 'revenue',
-        isRecurring: true
-      });
+      const createdLineItems = [];
+      for (const item of lineItems) {
+        const created = await this.createLineItem(organizationId, item);
+        createdLineItems.push(created);
+      }
 
-      const costsCategory = await this.createCategory(organizationId, {
-        name: 'Costs',
-        type: 'expense',
-        description: 'All costs',
-        color: '#EF4444'
-      });
+      // Initialize budget for current year
+      await this.initializeBudgetForYear(organizationId, currentYear, 'budget');
 
-      const salariesCategory = await this.createCategory(organizationId, {
-        name: 'Salaries',
-        type: 'expense',
-        description: 'Employee salaries and benefits',
-        color: '#F59E0B'
-      });
+      // Add sample budget data
+      const sampleData = [
+        { lineItemId: createdLineItems[0].id, amounts: [50000, 55000, 60000, 65000, 70000, 75000, 80000, 85000, 90000, 95000, 100000, 105000] },
+        { lineItemId: createdLineItems[1].id, amounts: [20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 28000, 29000, 30000, 31000] },
+        { lineItemId: createdLineItems[2].id, amounts: [80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000] },
+        { lineItemId: createdLineItems[3].id, amounts: [60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000] },
+        { lineItemId: createdLineItems[4].id, amounts: [5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000] },
+        { lineItemId: createdLineItems[5].id, amounts: [10000, 12000, 15000, 18000, 20000, 22000, 25000, 28000, 30000, 32000, 35000, 38000] }
+      ];
 
-      const marketingCategory = await this.createCategory(organizationId, {
-        name: 'Marketing',
-        type: 'expense',
-        description: 'Marketing and advertising expenses',
-        color: '#A21CAF'
-      });
+      for (const item of sampleData) {
+        await this.bulkUpdateBudgetValues(organizationId, item.lineItemId, currentYear, item.amounts, 'budget');
+      }
 
-      // Add Salaries and Marketing lines under Costs
-      const salariesLine = await this.createLineItem(organizationId, {
-        categoryId: costsCategory.id,
-        name: 'Salaries',
-        description: 'Salaries expense',
-        type: 'expense',
-        isRecurring: true
-      });
-      const marketingLine = await this.createLineItem(organizationId, {
-        categoryId: costsCategory.id,
-        name: 'Marketing',
-        description: 'Marketing expense',
-        type: 'expense',
-        isRecurring: true
-      });
-
-      // Create line items for each category
-      const productSales = await this.createLineItem(organizationId, {
-        categoryId: productSalesCategory.id,
-        name: 'Product Sales',
-        description: 'Product sales revenue',
-        type: 'revenue',
-        isRecurring: true
-      });
-
-      const consulting = await this.createLineItem(organizationId, {
-        categoryId: consultingCategory.id,
-        name: 'Consulting',
-        description: 'Consulting revenue',
-        type: 'revenue',
-        isRecurring: true
-      });
-
-      const salaries = await this.createLineItem(organizationId, {
-        categoryId: salariesCategory.id,
-        name: 'Salaries',
-        description: 'Salaries expense',
-        type: 'expense',
-        isRecurring: true
-      });
-
-      const marketing = await this.createLineItem(organizationId, {
-        categoryId: marketingCategory.id,
-        name: 'Marketing',
-        description: 'Marketing expense',
-        type: 'expense',
-        isRecurring: true
-      });
-
-      // No budget values, just structure
-      return {
-        categories: [revenueCategory, productSalesCategory, consultingCategory, costsCategory, salariesCategory, marketingCategory],
-        lineItems: [salesLine, productSales, consulting, salariesLine, marketingLine, salaries, marketing]
-      };
+      return { categories: createdCategories, lineItems: createdLineItems };
     } catch (error) {
       console.error('Error creating sample data:', error);
       throw error;
     }
   },
 
-  // Get budget data with forecast comparison
+  // Get budget with forecast comparison
   async getBudgetWithForecastComparison(organizationId, year) {
-    console.log('getBudgetWithForecastComparison called with:', { organizationId, year });
-    
-    const [budgetData, forecastData] = await Promise.all([
-      this.getBudgetData(organizationId, year, false), // Budget data
-      this.getBudgetData(organizationId, year, true)   // Forecast data
-    ]);
-
-    console.log('Budget data loaded:', budgetData.length, 'items');
-    console.log('Forecast data loaded:', forecastData.length, 'items');
-
-    // Create a map of line items with both budget and forecast data
-    const comparisonMap = new Map();
-
-    // Process budget data
-    budgetData.forEach(item => {
-      const key = item.line_item_id;
-      if (!comparisonMap.has(key)) {
-        comparisonMap.set(key, {
-          line_item_id: item.line_item_id,
-          line_item_name: item.line_item_name,
-          category_id: item.category_id,
-          category_name: item.category_name,
-          type: item.type,
-          budget: {},
-          forecast: {},
-          budget_total: 0,
-          forecast_total: 0
+    try {
+      const { data, error } = await supabase
+        .rpc('get_budget_summary', {
+          p_organization_id: organizationId,
+          p_year: year,
+          p_data_type: 'all'
         });
-      }
-      const entry = comparisonMap.get(key);
-      for (let month = 1; month <= 12; month++) {
-        const monthKey = `month_${month}`;
-        entry.budget[monthKey] = item[monthKey] || 0;
-        entry.budget_total += item[monthKey] || 0;
-      }
-    });
 
-    // Process forecast data
-    forecastData.forEach(item => {
-      const key = item.line_item_id;
-      if (!comparisonMap.has(key)) {
-        comparisonMap.set(key, {
-          line_item_id: item.line_item_id,
-          line_item_name: item.line_item_name,
-          category_id: item.category_id,
-          category_name: item.category_name,
-          type: item.type,
-          budget: {},
-          forecast: {},
-          budget_total: 0,
-          forecast_total: 0
-        });
-      }
-      const entry = comparisonMap.get(key);
-      for (let month = 1; month <= 12; month++) {
-        const monthKey = `month_${month}`;
-        entry.forecast[monthKey] = item[monthKey] || 0;
-        entry.forecast_total += item[monthKey] || 0;
-      }
-    });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting budget with forecast comparison:', error);
+      throw error;
+    }
+  },
 
-    // Ensure every entry has both budget and forecast months filled (default to 0)
-    const allKeys = new Set([
-      ...budgetData.map(item => item.line_item_id),
-      ...forecastData.map(item => item.line_item_id)
-    ]);
-    allKeys.forEach(key => {
-      const entry = comparisonMap.get(key);
-      if (!entry) return;
-      if (!entry.budget) entry.budget = {};
-      if (!entry.forecast) entry.forecast = {};
-      for (let month = 1; month <= 12; month++) {
-        const m = `month_${month}`;
-        if (entry.budget[m] === undefined) entry.budget[m] = 0;
-        if (entry.forecast[m] === undefined) entry.forecast[m] = 0;
-      }
-    });
-
-    const result = Array.from(comparisonMap.values());
-    console.log('Comparison result:', result.length, 'items');
-    console.log('Sample comparison item:', result[0]);
-    
-    return result;
+  async lockForecastAsActual(organizationId, lineItemId, year, month) {
+    // Get the forecast value for this cell
+    const { data, error } = await supabase
+      .from('budget_data')
+      .select('forecast_amount')
+      .eq('organization_id', organizationId)
+      .eq('line_item_id', lineItemId)
+      .eq('year', year)
+      .eq('month', month)
+      .single();
+    if (error) throw error;
+    const forecastValue = data?.forecast_amount || 0;
+    // Set actual_amount = forecast_amount
+    return this.updateBudgetValue(organizationId, lineItemId, year, month, forecastValue, 'actuals');
   }
 }; 

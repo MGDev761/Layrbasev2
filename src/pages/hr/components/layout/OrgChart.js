@@ -38,10 +38,10 @@ const MemberNode = ({ member, isRoot = false, onSelect, selectedId, reportingPat
   const hasChildInPath = member.children?.some(c => reportingPath.includes(c.id));
 
   return (
-    <div className={`relative flex flex-col items-center ${isRoot ? '' : 'pt-8 min-h-[64px]'}`} style={{ minWidth: '176px' }}>
+    <div className={`relative flex flex-col items-center ${isRoot ? '' : 'pt-0 min-h-0'}`} style={{ minWidth: '176px' }}>
       {/* Connecting line from parent */}
       {!isRoot && (
-        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 z-0 ${isInPath ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full z-0 ${isInPath ? 'bg-purple-500' : 'bg-gray-300'}`} style={{ height: '32px' }}></div>
       )}
       {/* Member Box */}
       <button
@@ -56,7 +56,7 @@ const MemberNode = ({ member, isRoot = false, onSelect, selectedId, reportingPat
       {member.children && member.children.length > 0 && (
         <>
           {/* Vertical line connecting to children's horizontal bar */}
-          <div className={`absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-8 z-0 ${hasChildInPath ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+          <div className={`absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-full z-0 ${hasChildInPath ? 'bg-purple-500' : 'bg-gray-300'}`} style={{ height: '32px' }}></div>
           <div className="flex justify-center mt-8 relative w-full min-w-max">
             {/* Horizontal connecting line - only if more than one child */}
             {member.children.length > 1 && (

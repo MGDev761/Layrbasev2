@@ -129,7 +129,7 @@ export default function CrmDashboard({ onSection }) {
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <UserGroupIcon className="h-6 w-6 text-blue-600" />
@@ -140,7 +140,7 @@ export default function CrmDashboard({ onSection }) {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <ChartBarIcon className="h-6 w-6 text-green-600" />
@@ -151,7 +151,7 @@ export default function CrmDashboard({ onSection }) {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg p-6">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <CurrencyDollarIcon className="h-6 w-6 text-purple-600" />
@@ -162,7 +162,7 @@ export default function CrmDashboard({ onSection }) {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg p-6">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
               <StarIcon className="h-6 w-6 text-orange-600" />
@@ -181,7 +181,7 @@ export default function CrmDashboard({ onSection }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+          <div className="bg-white rounded-lg p-6">
             <h4 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {sections.map(section => {
@@ -214,7 +214,7 @@ export default function CrmDashboard({ onSection }) {
 
         {/* Recent Activities */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+          <div className="bg-white rounded-lg p-6">
             <h4 className="text-lg font-medium text-gray-900 mb-4">Recent Activities</h4>
             <div className="space-y-4">
               {recentActivities.length > 0 ? (

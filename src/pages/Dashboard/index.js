@@ -107,9 +107,9 @@ const Dashboard = () => {
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Marketing Releases</h2>
           <Card className="overflow-hidden">
-            <div className="divide-y divide-gray-100">
+            <div>
               {marketingReleases.map((release, index) => (
-                <div key={index} className="flex items-center justify-between p-4">
+                <div key={index} className="flex items-center justify-between p-4 border-b last:border-b-0 border-gray-100 bg-white">
                   <div>
                     <h4 className="text-sm font-medium text-gray-900">{release.title}</h4>
                     <p className="text-xs text-gray-500 mt-1">{release.date}</p>
@@ -132,9 +132,9 @@ const Dashboard = () => {
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Team Holidays</h2>
           <Card className="overflow-hidden">
-            <div className="divide-y divide-gray-100">
+            <div>
               {teamHolidays.map((holiday, index) => (
-                <div key={index} className="flex items-center justify-between p-4">
+                <div key={index} className="flex items-center justify-between p-4 border-b last:border-b-0 border-gray-100 bg-white">
                   <div>
                     <h4 className="text-sm font-medium text-gray-900">{holiday.name}</h4>
                     <p className="text-xs text-gray-500">{holiday.role}</p>

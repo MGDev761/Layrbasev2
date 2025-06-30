@@ -335,25 +335,35 @@ export default function CompaniesList({ onBack }) {
       </div>
 
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {/* Tabs for Companies/Contacts */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('companies')}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'companies' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'companies'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
             >
-              <BuildingOfficeIcon className="h-4 w-4 mr-2" />
               Companies
             </button>
             <button
               onClick={() => setActiveTab('contacts')}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'contacts' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'contacts'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
             >
-              <UserIcon className="h-4 w-4 mr-2" />
               Contacts
             </button>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="relative w-64">
+          </nav>
+        </div>
+        {/* Top bar: search, filter, add button */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
               <MagnifyingGlassIcon className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -376,18 +386,18 @@ export default function CompaniesList({ onBack }) {
                 <option value="inactive">Inactive</option>
               </select>
             )}
-            <button
-              onClick={() => activeTab === 'companies' ? setShowModal(true) : contactsListRef.current?.openEdit()}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" /> Add {activeTab === 'companies' ? 'Company' : 'Contact'}
-            </button>
           </div>
+          <button
+            onClick={() => activeTab === 'companies' ? setShowModal(true) : contactsListRef.current?.openEdit()}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" /> Add {activeTab === 'companies' ? 'Company' : 'Contact'}
+          </button>
         </div>
         {activeTab === 'companies' ? (
-          <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
+          <div className="bg-white rounded-md overflow-hidden">
             {filteredCompanies.length > 0 ? (
-              <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
@@ -879,17 +889,6 @@ export default function CompaniesList({ onBack }) {
                     <span>Communication</span>
                   </button>
                   <button
-                    onClick={() => setContactDetailTab('details')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                      contactDetailTab === 'details'
-                        ? 'border-purple-500 text-purple-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <UserIcon className="h-4 w-4" />
-                    <span>Details</span>
-                  </button>
-                  <button
                     onClick={() => setContactDetailTab('notes')}
                     className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                       contactDetailTab === 'notes'
@@ -899,17 +898,6 @@ export default function CompaniesList({ onBack }) {
                   >
                     <DocumentTextIcon className="h-4 w-4" />
                     <span>Notes</span>
-                  </button>
-                  <button
-                    onClick={() => setContactDetailTab('activities')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                      contactDetailTab === 'activities'
-                        ? 'border-purple-500 text-purple-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <ClockIcon className="h-4 w-4" />
-                    <span>Activities</span>
                   </button>
                 </nav>
               </div>
@@ -925,84 +913,6 @@ export default function CompaniesList({ onBack }) {
                     </div>
                   </div>
                 )}
-                
-                {contactDetailTab === 'details' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-gray-900">Contact Details</h3>
-                      {!bulkEditing ? (
-                        <button
-                          onClick={startBulkEditing}
-                          className="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                        >
-                          Edit
-                        </button>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={saveBulkChanges}
-                            className="px-3 py-1 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={cancelBulkEditing}
-                            className="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <EditableField 
-                        label="First Name" 
-                        value={selectedContact.first_name} 
-                        field="first_name" 
-                      />
-                      <EditableField 
-                        label="Last Name" 
-                        value={selectedContact.last_name} 
-                        field="last_name" 
-                      />
-                      <EditableField 
-                        label="Email" 
-                        value={selectedContact.email} 
-                        field="email" 
-                        type="email" 
-                      />
-                      <EditableField 
-                        label="Phone" 
-                        value={selectedContact.phone} 
-                        field="phone" 
-                        type="tel" 
-                      />
-                      <EditableField 
-                        label="Position" 
-                        value={selectedContact.position} 
-                        field="position" 
-                      />
-                      <EditableField 
-                        label="Status" 
-                        value={selectedContact.status} 
-                        field="status" 
-                        type="select"
-                        options={[
-                          { value: 'prospect', label: 'Prospect' },
-                          { value: 'lead', label: 'Lead' },
-                          { value: 'customer', label: 'Customer' },
-                          { value: 'inactive', label: 'Inactive' }
-                        ]}
-                      />
-                      <EditableField 
-                        label="Lead Score" 
-                        value={selectedContact.lead_score} 
-                        field="lead_score" 
-                        type="number" 
-                      />
-                    </div>
-                  </div>
-                )}
 
                 {contactDetailTab === 'notes' && (
                   <div className="space-y-4">
@@ -1013,26 +923,12 @@ export default function CompaniesList({ onBack }) {
                     </div>
                   </div>
                 )}
-
-                {contactDetailTab === 'activities' && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Activities</h3>
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <ClockIcon className="h-12 w-12 text-gray-300 mb-4" />
-                      <p className="text-gray-500 text-sm">No activities yet</p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Footer */}
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
                 <button
-                  onClick={() => {
-                    // Handle contact deletion
-                    setContacts(prev => prev.filter(c => c.id !== selectedContact.id));
-                    closeContactDetail();
-                  }}
+                  onClick={() => handleDelete(selectedContact.id)}
                   className="px-4 py-2 text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 transition-colors"
                 >
                   Delete Contact
@@ -1042,9 +938,6 @@ export default function CompaniesList({ onBack }) {
           </div>
         )}
       </div>
-
-      {/* Help Modal */}
-      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
-} 
+}

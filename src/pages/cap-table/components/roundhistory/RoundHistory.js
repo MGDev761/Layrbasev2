@@ -315,7 +315,7 @@ const RoundHistory = ({ onAddRound }) => {
   };
 
   const renderAddRoundForm = () => (
-    <div className="bg-white rounded-lg shadow-lg border p-6 my-6">
+    <div className="bg-white rounded-lg p-6 my-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Round</h3>
       <form onSubmit={handleAddRound} className="space-y-6">
         {/* Round Details */}
@@ -451,7 +451,7 @@ const RoundHistory = ({ onAddRound }) => {
             </div>
           </div>
           {participants.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-white rounded-lg overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -636,7 +636,7 @@ const RoundHistory = ({ onAddRound }) => {
 
           <div className="space-y-4">
             {rounds.map((round) => (
-              <div key={round.id} className="bg-white rounded-lg shadow border border-gray-200">
+              <div key={round.id} className="bg-white rounded-lg">
                 {/* Round Header */}
                 <div 
                   className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"

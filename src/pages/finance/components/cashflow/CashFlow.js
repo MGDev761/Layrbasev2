@@ -100,8 +100,8 @@ const CashFlowRow = ({ item, isActual = false }) => (
         <div>
           <p className="text-sm font-medium text-gray-900">{item.description}</p>
           <p className="text-xs text-gray-500">{item.category}</p>
-        </div>
-      </div>
+    </div>
+  </div>
     </td>
     <td className="px-4 py-3 text-sm text-gray-900">{item.date}</td>
     <td className="px-4 py-3 text-sm text-gray-900">{item.type}</td>
@@ -365,9 +365,9 @@ const CashFlow = () => {
                   <div className="text-lg font-semibold text-gray-800">Cash Runway</div>
                   <div className={`text-2xl font-bold ${getCashRunwayColor(cashRunway)}`}>{cashRunway ? `${cashRunway.toFixed(1)} months` : '—'}</div>
                   <div className="text-xs text-gray-500">How long your cash will last at current burn rate</div>
-                </div>
-              </div>
-            </Card>
+        </div>
+      </div>
+    </Card>
           </div>
           {/* <Card className="bg-white mt-8">
             <div className="text-lg font-semibold text-gray-800 mb-2">Runway Calculation Breakdown</div>

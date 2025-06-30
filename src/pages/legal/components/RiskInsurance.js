@@ -324,11 +324,11 @@ const RiskInsurance = () => {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between mb-2">
+    <div>
+      <div className="flex items-center justify-between mb-2 mt-2">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Risk & Insurance</h2>
-          <p className="text-gray-600 text-sm">Manage your company's insurance policies and assess business risks.</p>
+          <p className="text-gray-600 text-sm mb-2">Manage your company's insurance policies and assess business risks.</p>
         </div>
         <button
           onClick={() => setShowInfoModal(true)}
@@ -341,20 +341,21 @@ const RiskInsurance = () => {
       </div>
       <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
 
-      <div className="flex justify-between items-center">
-        <div className="flex-1 relative max-w-xs">
-          <MagnifyingGlassIcon className="pointer-events-none absolute top-2.5 left-3 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search policies..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
-          />
+      {/* Actions Bar - now visually attached to table */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="relative flex-1 max-w-md">
+            <MagnifyingGlassIcon className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search policies..."
+              className="w-full pl-10 pr-4 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
+            />
+          </div>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           {showAddForm ? 'Cancel' : 'Add New Policy'}
@@ -473,8 +474,9 @@ const RiskInsurance = () => {
         </div>
       )}
 
-      <div className="bg-white overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+      {/* Table Container - flat, no border/shadow, rounded bottom only */}
+      <div className="bg-white rounded-b-md overflow-visible">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy</th>
@@ -486,57 +488,67 @@ const RiskInsurance = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredPolicies.map(policy => (
-              <tr key={policy.id} className={policy.is_expiring_soon ? 'bg-orange-50' : ''}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{policy.name}</div>
-                  {policy.policy_number && (
-                    <div className="text-sm text-gray-500">#{policy.policy_number}</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{policy.provider}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{formatCurrency(policy.coverage_amount)}</div>
-                  {policy.premium_amount && (
-                    <div className="text-sm text-gray-500">Premium: {formatCurrency(policy.premium_amount)}</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {new Date(policy.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {filteredPolicies.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-16">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-sm">No policies found</p>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {getDaysUntilExpiryText(policy.days_until_expiry, policy.is_expiring_soon)}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <select
-                    value={policy.status}
-                    onChange={(e) => handleStatusChange(policy.id, e.target.value)}
-                    className={`text-sm font-medium rounded-full px-2.5 py-0.5 ${getStatusColor(policy.status, policy.is_expiring_soon)}`}
-                  >
-                    <option value="active">Active</option>
-                    <option value="expired">Expired</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleDeletePolicy(policy.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredPolicies.map(policy => (
+                <tr key={policy.id} className={policy.is_expiring_soon ? 'bg-orange-50' : ''}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{policy.name}</div>
+                    {policy.policy_number && (
+                      <div className="text-sm text-gray-500">#{policy.policy_number}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{policy.provider}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{formatCurrency(policy.coverage_amount)}</div>
+                    {policy.premium_amount && (
+                      <div className="text-sm text-gray-500">Premium: {formatCurrency(policy.premium_amount)}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {new Date(policy.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {getDaysUntilExpiryText(policy.days_until_expiry, policy.is_expiring_soon)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <select
+                      value={policy.status}
+                      onChange={(e) => handleStatusChange(policy.id, e.target.value)}
+                      className={`text-sm font-medium rounded-full px-2.5 py-0.5 ${getStatusColor(policy.status, policy.is_expiring_soon)}`}
+                    >
+                      <option value="active">Active</option>
+                      <option value="expired">Expired</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleDeletePolicy(policy.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {filteredPolicies.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No policies found</p>
-          </div>
-        )}
       </div>
     </div>
   );

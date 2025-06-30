@@ -154,7 +154,7 @@ const MyOrganizations = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-md shadow flex flex-row">
+      <div className="bg-white rounded-md flex flex-row">
         <div className="w-64 border-r border-gray-200 p-4 bg-white">
           <div className="mb-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Organizations</div>
           {organizations.map((org, idx) => (
@@ -169,7 +169,7 @@ const MyOrganizations = () => {
         </div>
         <div className="flex-1">
           {selectedOrg ? (
-            <div className="bg-white shadow">
+            <div className="bg-white">
               {/* Header */}
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
@@ -303,7 +303,7 @@ const MyOrganizations = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <div className="bg-white rounded-lg p-6">
               <div className="text-center">
                 <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No organization selected</h3>

@@ -313,21 +313,21 @@ const CapTableContent = () => {
       {/* Summary Cards */}
       {derivedTable.summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-4 rounded-lg">
             <p className="text-sm text-gray-500">Total Shares</p>
             <p className="text-xl font-bold">{formatNumber(derivedTable.summary.totalShares || 0)}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-4 rounded-lg">
             <p className="text-sm text-gray-500">Total Investment</p>
             <p className="text-xl font-bold">{formatCurrency(derivedTable.summary.totalInvestment || 0)}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-4 rounded-lg">
             <p className="text-sm text-gray-500">Founders Ownership</p>
             <p className="text-xl font-bold">
               {formatPercent((derivedTable.summary.foundersOwnership || 0) / 100)}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-4 rounded-lg">
             <p className="text-sm text-gray-500">Investors Ownership</p>
             <p className="text-xl font-bold">
               {formatPercent((derivedTable.summary.investorsOwnership || 0) / 100)}
@@ -338,7 +338,7 @@ const CapTableContent = () => {
 
       {/* Cap Table */}
       <div className="overflow-x-auto">
-        <div className="bg-white rounded-lg shadow border border-gray-200 min-w-full inline-block">
+        <div className="bg-white rounded-lg min-w-full inline-block">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

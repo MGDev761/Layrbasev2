@@ -60,15 +60,19 @@ const SideInfoModal = ({ isOpen, onClose }) => {
   );
 };
 
-const EventsCalendar = () => {
+const MarketingCalendar = () => {
+  const today = dayjs();
   const { currentOrganization } = useAuth();
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('calendar');
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(today.month());
+  const [currentYear, setCurrentYear] = useState(today.year());
+  const [selectedDate, setSelectedDate] = useState(today);
   const [newActivity, setNewActivity] = useState({
     title: '',
     event_type: 'blog',
@@ -76,6 +80,8 @@ const EventsCalendar = () => {
     description: ''
   });
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [calendarViewType, setCalendarViewType] = useState('monthly'); // 'monthly' or 'weekly'
+  const [currentWeekStart, setCurrentWeekStart] = useState(today.startOf('week'));
 
   const activityTypes = [
     { value: 'blog', label: 'Blog Post', color: 'bg-blue-100 text-blue-800' },
@@ -97,10 +103,6 @@ const EventsCalendar = () => {
     { value: 'blog', label: 'Blog' },
     { value: 'other', label: 'Other' },
   ];
-
-  const today = dayjs();
-  const [currentMonth, setCurrentMonth] = useState(today.month());
-  const [currentYear, setCurrentYear] = useState(today.year());
 
   const monthStart = dayjs(`${currentYear}-${currentMonth + 1}-01`);
   const monthMatrix = getMonthMatrix(currentYear, currentMonth);
@@ -151,6 +153,7 @@ const EventsCalendar = () => {
       await createMarketingEvent(newActivity, currentOrganization.organization_id);
       setShowAddModal(false);
       setNewActivity({ title: '', event_type: 'blog', event_date: '', description: '' });
+      setSelectedDate(today);
       await loadActivities();
     } catch (error) {
       console.error('Error adding activity:', error);
@@ -197,12 +200,49 @@ const EventsCalendar = () => {
     }
   };
 
+  const handleDateClick = (date) => {
+    if (date.month() === currentMonth) {
+      setSelectedDate(date);
+      setNewActivity({ ...newActivity, event_date: date.format('YYYY-MM-DD') });
+    }
+  };
+
+  const handleDateDoubleClick = (date) => {
+    if (date.month() === currentMonth) {
+      setSelectedDate(date);
+      setNewActivity({ ...newActivity, event_date: date.format('YYYY-MM-DD') });
+      setShowAddModal(true);
+    }
+  };
+
+  const handleAddNewForSelectedDate = () => {
+    if (selectedDate) {
+      setShowAddModal(true);
+    }
+  };
+
+  const handlePrev = () => {
+    if (calendarViewType === 'weekly') {
+      setCurrentWeekStart(currentWeekStart.subtract(1, 'week'));
+    } else {
+      handlePrevMonth();
+    }
+  };
+  const handleNext = () => {
+    if (calendarViewType === 'weekly') {
+      setCurrentWeekStart(currentWeekStart.add(1, 'week'));
+    } else {
+      handleNextMonth();
+    }
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between">
+    <>
+      {/* Heading and Help Button (now above the card) */}
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Events Calendar</h1>
-          <p className="text-gray-600 text-sm mb-6">Plan and manage your marketing activities including blog posts, press releases, ad campaigns, and newsletters.</p>
+          <h1 className="text-xl font-semibold text-gray-900">Marketing Calendar</h1>
+          <p className="text-gray-600 text-sm mb-2">Plan and manage your marketing activities including blog posts, press releases, ad campaigns, and newsletters.</p>
         </div>
         <button
           onClick={() => setShowHelpModal(true)}
@@ -213,309 +253,336 @@ const EventsCalendar = () => {
           Help
         </button>
       </div>
-
-      {/* Tabs and Actions Bar */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-          <button
-            onClick={() => setView('list')}
-            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              view === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            List View
-          </button>
-          <button
-            onClick={() => setView('calendar')}
-            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              view === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Calendar View
-          </button>
-        </div>
-        <div className="flex items-center space-x-3">
-          <div className="relative w-64">
-            <svg className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search activities..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        {/* Top controls: Toggle and main actions */}
+        <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+          {/* Toggle group for calendar/list */}
+          <div className="flex bg-gray-100 p-1 rounded-lg gap-0.5">
+            <button
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors duration-100 ${view === 'calendar' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-purple-600'}`}
+              onClick={() => setView('calendar')}
+            >
+              Calendar
+            </button>
+            <button
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors duration-100 ${view === 'list' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-purple-600'}`}
+              onClick={() => setView('list')}
+            >
+              List
+            </button>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add Activity
-          </button>
+          {/* Main actions */}
+          <div className="flex gap-2">
+            <button className="px-2 py-1 text-sm font-medium text-purple-700 bg-transparent border-none hover:underline rounded transition-colors">Export CSV</button>
+            <button className="px-3 py-1.5 rounded-md text-sm font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors">+ Add New</button>
+          </div>
         </div>
-      </div>
 
-      {view === 'list' ? (
-        <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
-          {loading ? (
-            <div className="text-center py-10">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500">Loading activities...</p>
+        {/* Month navigation and controls */}
+        {view === 'calendar' && (
+          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+            <div className="flex items-center gap-2">
+              <button onClick={handlePrev} className="px-2 py-1 rounded hover:bg-gray-100 text-lg">&#8592;</button>
+              {calendarViewType === 'monthly' ? (
+                <span className="font-semibold text-gray-900">
+                  {monthStart.format('MMMM YYYY')}
+                </span>
+              ) : (
+                <span className="font-semibold text-gray-900">
+                  {currentWeekStart.format('MMM D')} – {currentWeekStart.add(6, 'day').format('MMM D, YYYY')}
+                </span>
+              )}
+              <button onClick={handleNext} className="px-2 py-1 rounded hover:bg-gray-100 text-lg">&#8594;</button>
             </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Activity
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredActivities.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-16">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </div>
-                        <p className="text-gray-500 text-sm">No marketing activities yet.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredActivities.map((activity) => (
-                    <tr key={activity.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{activity.title}</div>
-                        <div className="text-sm text-gray-500">{activity.description}</div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activityTypes.find(t => t.value === activity.event_type)?.color || 'bg-gray-100 text-gray-800'}`}>
-                          {activityTypes.find(t => t.value === activity.event_type)?.label || activity.event_type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(activity.event_date).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[activity.status]}`}>
-                          {activity.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                        <button 
-                          onClick={() => handleDeleteActivity(activity.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      ) : (
-        <div className="flex w-full gap-6">
-          {/* Filter Panel */}
-          <div className="w-64 bg-white rounded-md border border-gray-300 p-4 h-fit self-start space-y-6">
-            <div>
-              <div className="text-xs font-bold text-gray-500 uppercase mb-2">Search</div>
+            <div className="flex gap-2 items-center">
+              <select
+                className="px-3 py-2 rounded-md text-sm font-medium border border-purple-200 bg-purple-50 text-purple-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                value={calendarViewType}
+                onChange={e => setCalendarViewType(e.target.value)}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+              </select>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="Search events..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48"
               />
-            </div>
-            <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
-              <div className="text-xs font-bold text-gray-500 uppercase mb-4">Event Type</div>
-              <div className="space-y-3">
-                {eventTypes.map(type => (
-                  <label key={type.value} className="flex items-center gap-3 text-sm">
-                    <input
-                      type="checkbox"
-                      value={type.value}
-                      checked={selectedTypes.includes(type.value)}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setSelectedTypes([...selectedTypes, type.value]);
-                        } else {
-                          setSelectedTypes(selectedTypes.filter(t => t !== type.value));
-                        }
-                      }}
-                      className="w-5 h-5 accent-purple-600 rounded border-gray-300"
-                    />
-                    <span className="select-none">{type.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            {/* Add more filters as needed */}
-          </div>
-          {/* Calendar */}
-          <div className="flex-1">
-            <div className="bg-white rounded-md border border-gray-300 p-6 w-full max-w-4xl mx-auto">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <button onClick={handlePrevMonth} className="p-2 rounded hover:bg-gray-100">
-                  <span className="sr-only">Previous Month</span>
-                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <h2 className="text-lg font-semibold text-gray-900">{monthStart.format('MMMM YYYY')}</h2>
-                <button onClick={handleNextMonth} className="p-2 rounded hover:bg-gray-100">
-                  <span className="sr-only">Next Month</span>
-                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-              {/* Days of week */}
-              <div className="grid grid-cols-7 text-xs font-semibold text-gray-500 mb-2">
-                {daysOfWeek.map(day => (
-                  <div key={day} className="text-center py-1">{day}</div>
-                ))}
-              </div>
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-md overflow-hidden">
-                {monthMatrix.map((date, idx) => {
-                  const isToday = date.isSame(today, 'day');
-                  const isCurrentMonth = date.month() === currentMonth;
-                  const dateStr = date.format('YYYY-MM-DD');
-                  const dayEvents = eventsByDate[dateStr] || [];
-                  return (
-                    <div
-                      key={dateStr + idx}
-                      className={`min-h-[80px] bg-white flex flex-col border border-gray-100 px-2 py-1 relative
-                        ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''}
-                        ${isToday ? 'border-2 border-purple-500' : ''}`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs font-bold ${isToday ? 'text-purple-700' : ''}`}>{date.date()}</span>
-                        {isToday && <span className="text-[10px] bg-purple-100 text-purple-700 px-1 rounded">Today</span>}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        {dayEvents.slice(0,2).map((event, i) => (
-                          <div key={i} className="truncate text-xs bg-purple-50 text-purple-700 rounded px-1 py-0.5">
-                            {event.title}
-                          </div>
-                        ))}
-                        {dayEvents.length > 2 && (
-                          <div className="text-[10px] text-purple-500">+{dayEvents.length - 2} more</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <button className="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium border border-gray-200 text-purple-700 bg-white hover:bg-purple-50 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M3 12h18M3 18h18" /></svg>
+                Filter
+              </button>
+              <button className="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium border border-gray-200 text-purple-700 bg-white hover:bg-purple-50 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M6 10h12M9 14h6M12 18h0" /></svg>
+                Sort
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Add Activity Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowAddModal(false)} />
-          <div className="relative max-w-xl w-full bg-white rounded-xl shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-              <h3 className="text-lg font-medium text-gray-900">Add New Activity</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        {/* Calendar grid */}
+        {view === 'calendar' && calendarViewType === 'monthly' && (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {daysOfWeek.map(day => (
+                <div key={day} className="text-xs font-semibold text-gray-500 text-center py-1">{day}</div>
+              ))}
             </div>
-            <form onSubmit={e => { e.preventDefault(); handleAddActivity(); }} className="flex-1 flex flex-col justify-center">
-              <div className="flex-1 px-6 py-8 flex flex-col justify-center">
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Activity Title</label>
-                  <input
-                    type="text"
-                    value={newActivity.title}
-                    onChange={(e) => setNewActivity({ ...newActivity, title: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                    placeholder="Enter activity title"
-                  />
-                </div>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select
-                    value={newActivity.event_type}
-                    onChange={(e) => setNewActivity({ ...newActivity, event_type: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+            <div className="grid grid-cols-7 gap-1">
+              {monthMatrix.map((date, idx) => {
+                const isCurrentMonth = date.month() === currentMonth;
+                const isToday = date.isSame(today, 'day');
+                const isSelected = selectedDate && date.isSame(selectedDate, 'day');
+                const events = eventsByDate[date.format('YYYY-MM-DD')] || [];
+                return (
+                  <div
+                    key={date.format('YYYY-MM-DD')}
+                    onClick={() => handleDateClick(date)}
+                    onDoubleClick={() => handleDateDoubleClick(date)}
+                    className={`relative min-h-[80px] rounded-lg border text-xs flex flex-col px-2 py-1 transition-all duration-100 cursor-pointer
+                      ${isCurrentMonth ? 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50' : 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50'}
+                      ${isToday ? 'border-purple-400 ring-2 ring-purple-200' : ''}
+                      ${isSelected ? 'border-purple-500 ring-2 ring-purple-300 bg-purple-100' : ''}
+                    `}
+                    style={!isCurrentMonth ? { backgroundImage: 'repeating-linear-gradient(135deg, #f3f4f6 0px, #f3f4f6 4px, #e5e7eb 4px, #e5e7eb 8px)' } : {}}
                   >
-                    {eventTypes.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Event Date</label>
-                  <input
-                    type="date"
-                    value={newActivity.event_date}
-                    onChange={(e) => setNewActivity({ ...newActivity, event_date: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                  />
-                </div>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={newActivity.description}
-                    onChange={(e) => setNewActivity({ ...newActivity, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50"
-                >
-                  {saving ? 'Adding...' : 'Add Activity'}
-                </button>
-              </div>
-            </form>
+                    <div className={`font-semibold mb-1 ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}`}>{date.date()}</div>
+                    <div className="flex flex-col gap-1">
+                      {events.map((event, i) => (
+                        <div key={i} className="flex items-center gap-1 text-xs">
+                          {/* Example: emoji by type, fallback to 📌 */}
+                          <span>{event.event_type === 'blog' ? '📝' : event.event_type === 'press_release' ? '📰' : event.event_type === 'ad_campaign' ? '📢' : event.event_type === 'newsletter' ? '✉️' : '📌'}</span>
+                          <span className="truncate max-w-[80px]" title={event.title}>{event.title}</span>
+                          <span className="ml-1 px-1 rounded bg-gray-100 text-gray-500 text-[10px]">{event.status || ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        {view === 'calendar' && calendarViewType === 'weekly' && (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {daysOfWeek.map(day => (
+                <div key={day} className="text-xs font-semibold text-gray-500 text-center py-1">{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {[...Array(7)].map((_, i) => {
+                const date = currentWeekStart.add(i, 'day');
+                const isCurrentMonth = date.month() === currentMonth;
+                const isToday = date.isSame(today, 'day');
+                const isSelected = selectedDate && date.isSame(selectedDate, 'day');
+                const events = eventsByDate[date.format('YYYY-MM-DD')] || [];
+                return (
+                  <div
+                    key={date.format('YYYY-MM-DD')}
+                    onClick={() => handleDateClick(date)}
+                    onDoubleClick={() => handleDateDoubleClick(date)}
+                    className={`relative min-h-[80px] rounded-lg border text-xs flex flex-col px-2 py-1 transition-all duration-100 cursor-pointer
+                      ${isCurrentMonth ? 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50' : 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50'}
+                      ${isToday ? 'border-purple-400 ring-2 ring-purple-200' : ''}
+                      ${isSelected ? 'border-purple-500 ring-2 ring-purple-300 bg-purple-100' : ''}
+                    `}
+                  >
+                    <div className={`font-semibold mb-1 ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}`}>{date.date()}</div>
+                    <div className="flex flex-col gap-1">
+                      {events.map((event, i) => (
+                        <div key={i} className="flex items-center gap-1 text-xs">
+                          <span>{event.event_type === 'blog' ? '📝' : event.event_type === 'press_release' ? '📰' : event.event_type === 'ad_campaign' ? '📢' : event.event_type === 'newsletter' ? '✉️' : '📌'}</span>
+                          <span className="truncate max-w-[80px]" title={event.title}>{event.title}</span>
+                          <span className="ml-1 px-1 rounded bg-gray-100 text-gray-500 text-[10px]">{event.status || ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* List view (existing) */}
+        {view === 'list' && (
+          <div className="mt-4">
+            {/* Controls row for list view */}
+            <div className="flex gap-2 items-center mb-4">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48"
+              />
+              <button className="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium border border-gray-200 text-purple-700 bg-white hover:bg-purple-50 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M3 12h18M3 18h18" /></svg>
+                Filter
+              </button>
+              <button className="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium border border-gray-200 text-purple-700 bg-white hover:bg-purple-50 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M6 10h12M9 14h6M12 18h0" /></svg>
+                Sort
+              </button>
+            </div>
+            {loading ? (
+              <div className="text-center py-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-500">Loading activities...</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Activity
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredActivities.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-16">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </div>
+                          <p className="text-gray-500 text-sm">No marketing activities yet.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredActivities.map((activity) => (
+                      <tr key={activity.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{activity.title}</div>
+                          <div className="text-sm text-gray-500">{activity.description}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activityTypes.find(t => t.value === activity.event_type)?.color || 'bg-gray-100 text-gray-800'}`}>
+                            {activityTypes.find(t => t.value === activity.event_type)?.label || activity.event_type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(activity.event_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[activity.status]}`}>
+                            {activity.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                          <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                          <button 
+                            onClick={() => handleDeleteActivity(activity.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* Add Activity Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowAddModal(false)} />
+            <div className="relative max-w-xl w-full bg-white rounded-xl shadow-2xl flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+                <h3 className="text-lg font-medium text-gray-900">Add New Activity</h3>
+                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+              </div>
+              <form onSubmit={e => { e.preventDefault(); handleAddActivity(); }} className="flex-1 flex flex-col justify-center">
+                <div className="flex-1 px-6 py-8 flex flex-col justify-center">
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Activity Title</label>
+                    <input
+                      type="text"
+                      value={newActivity.title}
+                      onChange={(e) => setNewActivity({ ...newActivity, title: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                      placeholder="Enter activity title"
+                    />
+                  </div>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select
+                      value={newActivity.event_type}
+                      onChange={(e) => setNewActivity({ ...newActivity, event_type: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                    >
+                      {eventTypes.map(type => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Event Date</label>
+                    <input
+                      type="date"
+                      value={newActivity.event_date}
+                      onChange={(e) => setNewActivity({ ...newActivity, event_date: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                    />
+                  </div>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={newActivity.description}
+                      onChange={(e) => setNewActivity({ ...newActivity, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Adding...' : 'Add Activity'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
       <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
-    </div>
+    </>
   );
 };
 
-export default EventsCalendar; 
+export default MarketingCalendar; 

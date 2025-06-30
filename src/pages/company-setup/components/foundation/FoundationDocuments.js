@@ -583,7 +583,7 @@ const FoundationDocuments = () => {
         </button>
       </div>
       <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
-      <div className="bg-white rounded-lg shadow border border-gray-200">
+      <div className="bg-white rounded-lg">
         {/* Progress Bar */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">

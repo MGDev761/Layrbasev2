@@ -183,8 +183,8 @@ const ShareholderTable = () => {
       <div className="border-b border-gray-200 pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Shareholders</h1>
-            <p className="text-gray-600 text-sm mb-6">Manage your company's shareholders and their ownership details</p>
+        <h1 className="text-xl font-semibold text-gray-900">Shareholders</h1>
+        <p className="text-gray-600 text-sm mb-6">Manage your company's shareholders and their ownership details</p>
           </div>
           <button
             onClick={() => setShowInfoModal(true)}
@@ -197,7 +197,7 @@ const ShareholderTable = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      <div className="bg-white overflow-hidden sm:rounded-md">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Shareholder Breakdown</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">

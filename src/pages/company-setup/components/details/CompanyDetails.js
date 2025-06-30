@@ -177,7 +177,7 @@ const CompanyDetails = () => {
         {/* Top row: logo + basic info */}
         <div className="w-full flex flex-col md:flex-row gap-8 mb-4">
           {/* Logo upload, 1/3 width */}
-          <div className="w-full md:w-1/3 flex flex-col items-center justify-center bg-white rounded-xl shadow p-6 min-h-[220px] h-full">
+          <div className="w-full md:w-1/3 flex flex-col items-center justify-center bg-white rounded-xl p-6 min-h-[220px] h-full">
             <div className="mb-4 w-32 h-32 flex items-center justify-center rounded-lg overflow-hidden">
               {logoUrl ? (
                 <img src={logoUrl} alt="Company Logo" className="object-contain w-full h-full" />
@@ -201,7 +201,7 @@ const CompanyDetails = () => {
           </div>
           {/* Basic Info, 2/3 width */}
           <div className="w-full md:w-2/3 flex flex-col h-full">
-            <div className="bg-white rounded-xl shadow p-0 space-y-0 w-full min-h-[220px] h-full flex flex-col">
+            <div className="bg-white rounded-xl p-0 space-y-0 w-full min-h-[220px] h-full flex flex-col">
               <div className="flex items-center justify-between px-6 pt-6 pb-2">
                 <div className="text-lg font-bold text-gray-900 mb-4">Basic Information</div>
                 <div className="flex gap-2">
@@ -263,7 +263,7 @@ const CompanyDetails = () => {
               </div>
         {/* Contact Section */}
         <div className="w-full">
-          <div className="bg-white rounded-xl shadow p-0 space-y-0 w-full">
+          <div className="bg-white rounded-xl p-0 space-y-0 w-full">
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
               <div className="text-lg font-bold text-gray-900 mb-4">Contact</div>
               <div className="flex gap-2">
@@ -342,7 +342,7 @@ const CompanyDetails = () => {
         </div>
         {/* Banking Section */}
         <div className="w-full">
-          <div className="bg-white rounded-xl shadow p-0 space-y-0 w-full">
+          <div className="bg-white rounded-xl p-0 space-y-0 w-full">
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
               <div className="text-lg font-bold text-gray-900 mb-4">Banking</div>
               <div className="flex gap-2">

@@ -176,35 +176,35 @@ const CompanyPolicies = () => {
         </button>
       </div>
       <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
-      <div>
-        {/* Actions Bar */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex space-x-4">
-            <input
-              type="text"
-              placeholder="Search policies..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category === 'all' ? 'All Categories' : category}
-                </option>
-              ))}
-            </select>
-          </div>
+      <div className="bg-white rounded-lg overflow-hidden">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-4">
+              <input
+                type="text"
+                placeholder="Search policies..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="px-3 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
+              />
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-3 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category === 'all' ? 'All Categories' : category}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <button onClick={() => openModal()} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Add Policy</button>
+            <button onClick={() => openModal()} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Add Policy</button>
+          </div>
         </div>
 
-        <div className="overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -293,7 +293,6 @@ const CompanyPolicies = () => {
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* Add/Edit Modal */}
       {modalOpen && (

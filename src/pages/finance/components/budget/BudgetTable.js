@@ -35,7 +35,7 @@ const BudgetTable = ({
 }) => {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-sm border border-gray-200 rounded-lg">
+      <table className="w-full min-w-max text-sm border border-gray-200 rounded-lg">
         <thead>
           <tr className="bg-gray-50">
             <th className="px-3 py-2 text-left font-medium text-gray-500 w-40">Line</th>

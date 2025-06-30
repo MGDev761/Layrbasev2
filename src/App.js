@@ -41,6 +41,7 @@ function App() {
         <Route path="marketing/events" element={<Marketing activeSubTab="events" />} />
         <Route path="marketing/brand" element={<Marketing activeSubTab="brand" />} />
         <Route path="marketing/sales" element={<Marketing activeSubTab="sales" />} />
+        <Route path="marketing/content" element={<Marketing activeSubTab="content" />} />
         <Route path="sales/crm" element={<Sales activeSubTab="crm" />} />
         <Route path="sales/contacts" element={<Sales activeSubTab="contacts" />} />
         <Route path="sales/pipeline" element={<Sales activeSubTab="pipeline" />} />

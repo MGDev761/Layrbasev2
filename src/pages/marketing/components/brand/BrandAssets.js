@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { getBrandAssets, uploadBrandAsset, deleteBrandAsset, getBrandInformation, upsertBrandInformation, uploadBrandLogo } from '../../../../services/marketingService';
 import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import Modal from '../../../../components/common/layout/Modal';
 
 // Help Modal Component
 const SideInfoModal = ({ isOpen, onClose }) => {
@@ -44,6 +45,30 @@ const SideInfoModal = ({ isOpen, onClose }) => {
   );
 };
 
+const logoHorizontal = '/logo-horizontal.svg';
+const logoVertical = '/logo-vertical.svg';
+const logoIcon = '/logo-icon.svg';
+const logoWordmark = '/logo-wordmark.svg';
+
+const logoVariations = [
+  { label: 'Horizontal', src: logoHorizontal },
+  { label: 'Vertical', src: logoVertical },
+  { label: 'Icon', src: logoIcon },
+  { label: 'Wordmark', src: logoWordmark },
+];
+
+const navCards = [
+  { key: 'logos', label: 'Logos', icon: (
+    <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path d="M8 16l4-8 4 8" strokeWidth="2" /></svg>
+  ) },
+  { key: 'colours', label: 'Colours', icon: (
+    <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><circle cx="12" cy="12" r="4" strokeWidth="2" /></svg>
+  ) },
+  { key: 'messaging', label: 'Messaging', icon: (
+    <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="2" /><path d="M8 12h8M8 16h5" strokeWidth="2" /></svg>
+  ) },
+];
+
 const BrandAssets = () => {
   const { currentOrganization } = useAuth();
   const [brandInfo, setBrandInfo] = useState({
@@ -58,6 +83,8 @@ const BrandAssets = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
   const [newAsset, setNewAsset] = useState({
     name: '',
     description: '',
@@ -72,6 +99,13 @@ const BrandAssets = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editDraft, setEditDraft] = useState({ tagline: '', brand_blurb: '', logo_url: '' });
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [selectedSection, setSelectedSection] = useState('logos');
+  const [showInfo, setShowInfo] = useState(true);
+  const [uploadingMainLogo, setUploadingMainLogo] = useState(true); // true = main logo, false = variation
+  const [newLogoRule, setNewLogoRule] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [editableDescription, setEditableDescription] = useState('');
+  const [editingDescription, setEditingDescription] = useState(false);
 
   const assetTypes = [
     { value: 'all', label: 'All Types' },
@@ -128,7 +162,7 @@ const BrandAssets = () => {
 
     try {
       setSaving(true);
-      await uploadBrandAsset(selectedFile, newAsset, currentOrganization.organization_id);
+      await uploadBrandAsset(selectedFile, { ...newAsset, is_main_logo: true }, currentOrganization.organization_id);
       setShowUploadModal(false);
       setNewAsset({ name: '', description: '', asset_type: 'logo' });
       setSelectedFile(null);
@@ -269,6 +303,100 @@ const BrandAssets = () => {
     }
   };
 
+  // Find the main logo asset
+  const mainLogo = assets.find(a => a.asset_type === 'logo' && a.is_main_logo);
+
+  // Upload handler for logo (main or variation)
+  const handleLogoUpload = async (e) => {
+    e.preventDefault();
+    if (!uploadFile || !currentOrganization?.organization_id) return;
+    setUploading(true);
+    try {
+      await uploadBrandAsset(
+        uploadFile,
+        { name: uploadingMainLogo ? 'Main Logo' : 'Logo Variation', asset_type: 'logo', is_main_logo: uploadingMainLogo },
+        currentOrganization.organization_id
+      );
+      setShowUploadModal(false);
+      setUploadFile(null);
+      await loadData();
+    } catch (err) {
+      alert('Failed to upload logo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddLogoRule = async () => {
+    if (!newLogoRule.trim()) return;
+    const updatedBrandInfo = {
+      ...brandInfo,
+      logo_rules: [...(brandInfo.logo_rules || []), newLogoRule.trim()]
+    };
+    setBrandInfo(updatedBrandInfo);
+    setNewLogoRule('');
+    try {
+      setSaving(true);
+      await upsertBrandInformation(updatedBrandInfo, currentOrganization.organization_id);
+    } catch (error) {
+      console.error('Error saving logo rule:', error);
+      alert('Failed to save logo rule. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveLogoRule = async (index) => {
+    const updatedBrandInfo = {
+      ...brandInfo,
+      logo_rules: brandInfo.logo_rules.filter((_, i) => i !== index)
+    };
+    setBrandInfo(updatedBrandInfo);
+    try {
+      setSaving(true);
+      await upsertBrandInformation(updatedBrandInfo, currentOrganization.organization_id);
+    } catch (error) {
+      console.error('Error removing logo rule:', error);
+      alert('Failed to remove logo rule. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveDescription = async () => {
+    const updatedBrandInfo = {
+      ...brandInfo,
+      logo_description: editableDescription
+    };
+    setBrandInfo(updatedBrandInfo);
+    try {
+      setSaving(true);
+      await upsertBrandInformation(updatedBrandInfo, currentOrganization.organization_id);
+      setEditMode(false);
+    } catch (error) {
+      console.error('Error saving description:', error);
+      alert('Failed to save description. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Initialize editable description when brandInfo loads
+  useEffect(() => {
+    if (brandInfo.logo_description) {
+      setEditableDescription(brandInfo.logo_description);
+    }
+  }, [brandInfo.logo_description]);
+
+  const handleDownloadAsset = (asset) => {
+    const link = document.createElement('a');
+    link.href = asset.file_path;
+    link.download = asset.name || 'logo';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -279,539 +407,311 @@ const BrandAssets = () => {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="w-full">
+      {/* Heading and Subheading */}
+      <div className="mb-4 w-full">
           <h1 className="text-xl font-semibold text-gray-900">Brand Assets</h1>
-          <p className="text-gray-600 text-sm mb-6">Manage your company logos, icons, images, and documents in one place.</p>
+        <p className="text-gray-600 text-sm mb-4">Manage your company logos, icons, images, and documents in one place.</p>
         </div>
+      {/* Top Tab Menu */}
+      <div className="flex gap-2 border-b border-gray-200 mb-8">
+        {navCards.map(card => (
         <button
-          onClick={() => setShowHelpModal(true)}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
-        >
-          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
-          Help
+            key={card.key}
+            onClick={() => setSelectedSection(card.key)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium focus:outline-none transition-colors
+              ${selectedSection === card.key
+                ? 'border-b-2 border-purple-600 text-purple-700 bg-white'
+                : 'border-b-2 border-transparent text-gray-600 hover:text-purple-700 hover:bg-gray-50'}`}
+            style={{ minWidth: 0 }}
+          >
+            {React.cloneElement(card.icon, { className: 'w-5 h-5', style: { color: selectedSection === card.key ? '#9333ea' : '#a1a1aa' } })}
+            <span>{card.label}</span>
         </button>
+        ))}
       </div>
-
-      {/* Brand Information Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-        {/* Left: Logo + Tagline/Blurb */}
-        <div className="bg-white rounded-md border border-gray-300 flex flex-col p-0">
-          {/* Top Bar */}
-          <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-md border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Logo and Tagline</h2>
-            <button
-              className="px-3 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              onClick={() => {
-                setEditDraft({ tagline: brandInfo.tagline, brand_blurb: brandInfo.brand_blurb, logo_url: brandInfo.logo_url });
-                setShowEditModal(true);
-              }}
-            >
-              Edit
-            </button>
-          </div>
-          <div className="flex flex-row items-center w-full p-6 gap-6">
-            {/* Logo left */}
-            <div className="w-32 h-32 bg-gray-100 border border-gray-200 rounded-md flex items-center justify-center relative overflow-hidden">
-              {brandInfo.logo_url ? (
-                <img src={brandInfo.logo_url} alt="Brand Logo" className="object-contain w-full h-full" />
-              ) : (
-                <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              )}
-            </div>
-            {/* Tagline and Blurb right */}
-            <div className="flex-1 space-y-4">
-              {/* Tagline */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-800 mb-1">Tagline</label>
-                <span className="text-sm text-gray-600 min-h-[2.5rem]">{brandInfo.tagline || <span className="text-gray-400">No tagline set</span>}</span>
-              </div>
-              {/* Blurb */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-800 mb-1">Brand Description</label>
-                <span className="text-sm text-gray-600 min-h-[2.5rem]">{brandInfo.brand_blurb || <span className="text-gray-400">No description set</span>}</span>
-              </div>
-            </div>
-          </div>
+      {/* Blue Info Popup */}
+      {showInfo && (
+        <div className="flex items-start gap-3 bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-8 max-w-2xl relative">
+          <svg className="w-6 h-6 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01" /><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /></svg>
+          <div className="flex-1 text-sm text-blue-900">This is an info popup. You can use it to highlight important brand guidelines, usage tips, or updates for your team.</div>
+          <button onClick={() => setShowInfo(false)} className="ml-2 text-blue-400 hover:text-blue-600 text-lg font-bold focus:outline-none absolute top-2 right-2">&times;</button>
         </div>
-        {/* Right: Brand Colors */}
-        <div className="bg-white rounded-md border border-gray-300 flex flex-col p-0">
-          {/* Top Bar */}
-          <div className="flex items-center px-4 py-2 bg-gray-50 rounded-t-md border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Brand Colours</h2>
-          </div>
-          <div className="p-6 flex flex-col">
-            {/* Brand Colors content (leave as is) */}
-            <div className="flex flex-row gap-4 items-end h-full">
-              {brandInfo.color_palette.map((color, index) => (
-                <div key={index} className="relative flex flex-col items-center group" style={{ minWidth: 80, width: 80, height: 240 }}>
-                  {/* Color swatch with gradient overlay */}
-                  <div
-                    className="w-full h-full rounded-lg shadow border border-gray-200 flex flex-col justify-end relative cursor-pointer transition-transform group-hover:scale-105"
-                    style={{ background: `linear-gradient(to bottom, ${color} 60%, #fff0 100%), ${color}` }}
-                    onClick={() => setActiveColorIndex(index)}
-                  >
-                    {/* HEX label/value at bottom left */}
-                    <div className="absolute left-2 bottom-2 flex flex-col items-start">
-                      <span className="text-[10px] text-white/80 font-bold tracking-wider">HEX</span>
-                      <span className="text-xs text-white font-mono drop-shadow-sm">{color}</span>
+      )}
+      {/* Main Content */}
+      <div className="w-full">
+        {/* Section Content */}
+        {selectedSection === 'logos' && (
+          <div>
+            {/* Main Logo */}
+            <div className="mb-8 flex flex-col">
+              <div className="w-full max-w-xl mb-4">
+                {mainLogo ? (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center h-40 relative group">
+                    <img src={mainLogo.file_path} alt={mainLogo.name || 'Main Logo'} className="w-full h-full object-contain" />
+                    {/* Hover icons for main logo */}
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleDownloadAsset(mainLogo)}
+                        className="bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-gray-50 transition-colors"
+                        title="Download logo"
+                      >
+                        <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAsset(mainLogo.id)}
+                        className="bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 transition-colors"
+                        title="Remove logo"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
-                    {/* Color wheel and save/cancel in edit mode */}
-                    {activeColorIndex === index && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 rounded-lg z-50">
-                        <div className="bg-white rounded-lg p-4 shadow-lg relative z-50 transform -translate-x-20">
-                          <input
-                            type="color"
-                            value={color}
-                            onChange={e => setNewColorValue(e.target.value)}
-                            className="w-16 h-16 border-2 border-white rounded-full shadow mb-3 mx-auto block"
-                            autoFocus
-                          />
-                          <input
-                            type="text"
-                            value={newColorValue}
-                            onChange={e => setNewColorValue(e.target.value)}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded mb-3 text-center font-mono"
-                            placeholder="#000000"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleUpdateColor(index, newColorValue); }}
-                              disabled={saving}
-                              className="px-2 py-1 text-xs rounded bg-white text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
-                            >
-                              {saving ? 'Saving...' : 'Save'}
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setActiveColorIndex(null); }}
-                              className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleRemoveColor(index); setActiveColorIndex(null); }}
-                              className="px-2 py-1 text-xs rounded bg-red-600 text-white border border-red-700 hover:bg-red-700"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                </div>
-              ))}
-              {/* Add Color Box: always visible, click to open color picker + save/cancel */}
-              <div className="relative flex flex-col items-center group" style={{ minWidth: 80, width: 80, height: 240 }}>
-                <div
-                  className="w-full h-full rounded-lg shadow border-2 border-dashed border-gray-300 flex flex-col justify-center items-center cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => setAddingColor(true)}
-                >
-                  <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                ) : (
+                  <button
+                    className="w-full bg-white border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center py-10 hover:bg-purple-50 transition-colors"
+                    onClick={() => { setShowUploadModal(true); setUploadingMainLogo(true); }}
+                  >
+                    <svg className="w-10 h-10 text-purple-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span className="text-sm text-purple-600 font-medium">Add Logo</span>
+                  </button>
+                )}
+              </div>
+              <div className="text-left text-gray-600 max-w-2xl text-sm relative group">
+                {editingDescription ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editableDescription}
+                      onChange={(e) => setEditableDescription(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      rows="3"
+                      placeholder="Enter logo description..."
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveDescription}
+                        disabled={saving}
+                        className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingDescription(false);
+                          setEditableDescription(brandInfo.logo_description || '');
+                        }}
+                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div onClick={() => setEditingDescription(true)} className="cursor-pointer">
+                      {brandInfo.logo_description || 'Acme has a versatile logo system. Our logo features a symbol, a wordmark, and a full lockup. The main logo, which should always be the first choice, comes in horizontal and vertical variations.'}
+                    </div>
+                    {/* Pencil icon on text hover */}
+                    <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => setEditingDescription(true)}
+                        className="bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-gray-50 transition-colors"
+                        title="Edit description"
+                      >
+                        <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Logo Variations Grid */}
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Alternate Logos</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {/* Show uploaded logo variations */}
+                {assets.filter(a => a.asset_type === 'logo' && !a.is_main_logo).map((logo, index) => (
+                  <div key={logo.id} className="bg-white border border-gray-200 rounded-lg flex items-center justify-center p-4 h-32 relative group">
+                    <img src={logo.file_path} alt={logo.name || 'Logo Variation'} className="w-full h-full object-contain" />
+                    {/* Hover icons for logo variations */}
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleDownloadAsset(logo)}
+                        className="bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-gray-50 transition-colors"
+                        title="Download logo"
+                      >
+                        <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAsset(logo.id)}
+                        className="bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 transition-colors"
+                        title="Remove logo"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {/* Add Logo square - always present */}
+                <button className="bg-white border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center p-4 h-32 hover:bg-purple-50 transition-colors" onClick={() => { setShowUploadModal(true); setUploadingMainLogo(false); }}>
+                  <svg className="w-8 h-8 text-purple-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <span className="text-xs text-gray-400">Add Color</span>
-                </div>
-                {addingColor && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 rounded-lg z-50">
-                    <div className="bg-white rounded-lg p-4 shadow-lg relative z-50 transform -translate-x-20">
-                      <input
-                        type="color"
-                        value={newColorValue}
-                        onChange={e => setNewColorValue(e.target.value)}
-                        className="w-16 h-16 border-2 border-white rounded-full shadow mb-3 mx-auto block"
-                        autoFocus
-                      />
-                      <input
-                        type="text"
-                        value={newColorValue}
-                        onChange={e => setNewColorValue(e.target.value)}
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded mb-3 text-center font-mono"
-                        placeholder="#000000"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleAddColor(newColorValue); }}
-                          disabled={saving}
-                          className="px-2 py-1 text-xs rounded bg-white text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                          {saving ? 'Saving...' : 'Save'}
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setAddingColor(false); setNewColorValue('#000000'); }}
-                          className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 border border-gray-300 hover:bg-gray-300"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  <span className="text-xs text-purple-600 font-medium">Add Logo</span>
+                </button>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Assets Section */}
-      <div className="bg-white rounded-md border border-gray-300 flex flex-col p-0">
-        {/* Top Bar */}
-        <div className="flex items-center px-4 py-2 bg-gray-50 rounded-t-md border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Brand Assets</h2>
-        </div>
-        <div className="p-6">
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <svg className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+            {/* Logo Rules Section */}
+            <div className="max-w-2xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Logo Usage Rules</h2>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="mb-4">
+                  <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Search assets..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {assetTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
+                      value={newLogoRule}
+                      onChange={(e) => setNewLogoRule(e.target.value)}
+                      placeholder="Add a logo usage rule..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddLogoRule()}
+                    />
             <button
-              onClick={() => setShowUploadModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                      onClick={handleAddLogoRule}
+                      disabled={!newLogoRule.trim() || saving}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Upload Asset
+                      Add
             </button>
           </div>
-
-          {/* Assets Table */}
-          <div className="overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Asset
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Size
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Uploaded
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAssets.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-16">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         </div>
-                        <p className="text-gray-500 text-sm">No brand assets uploaded yet.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAssets.map((asset) => (
-                    <tr key={asset.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            {asset.file_type?.startsWith('image/') ? (
-                              <img className="h-10 w-10 rounded object-cover" src={asset.file_path} alt={asset.name} />
-                            ) : (
-                              <div className="h-10 w-10 bg-gray-100 rounded flex items-center justify-center">
-                                <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{asset.name}</div>
-                            <div className="text-sm text-gray-500">{asset.description}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {asset.asset_type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {formatFileSize(asset.file_size)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(asset.uploaded_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                        <a
-                          href={asset.file_path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-900 mr-3"
-                        >
-                          Download
-                        </a>
+                <div className="space-y-2">
+                  {(brandInfo.logo_rules || []).map((rule, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                      <span className="text-sm text-gray-800">{rule}</span>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset.id); }}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Upload Asset Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Upload Asset</h3>
-              <button
-                onClick={() => setShowUploadModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Asset Name</label>
-                <input
-                  type="text"
-                  value={newAsset.name}
-                  onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter asset name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Asset Type</label>
-                <select
-                  value={newAsset.asset_type}
-                  onChange={(e) => setNewAsset({ ...newAsset, asset_type: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="logo">Logo</option>
-                  <option value="icon">Icon</option>
-                  <option value="document">Document</option>
-                  <option value="image">Image</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
-                <textarea
-                  value={newAsset.description}
-                  onChange={(e) => setNewAsset({ ...newAsset, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Brief description of the asset"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">File</label>
-                <input
-                  type="file"
-                  onChange={(e) => setSelectedFile(e.target.files[0])}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowUploadModal(false)}
-                disabled={saving}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUploadAsset}
-                disabled={saving || !selectedFile || !newAsset.name}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Uploading...' : 'Upload Asset'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Upload Logo Modal */}
-      {showLogoUpload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Upload Logo</h3>
-              <button
-                onClick={() => setShowLogoUpload(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Logo File</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setLogoFile(e.target.files[0])}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowLogoUpload(false)}
-                disabled={saving}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUploadLogo}
-                disabled={saving || !logoFile}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Uploading...' : 'Upload Logo'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Brand Information Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowEditModal(false)} />
-          <div className="relative max-w-xl w-full bg-white rounded-xl shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-              <h3 className="text-lg font-medium text-gray-900">Edit Logo and Tagline</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            </div>
-            <form onSubmit={async e => { e.preventDefault(); const updatedBrandInfo = { ...brandInfo, ...editDraft }; setBrandInfo(updatedBrandInfo); setShowEditModal(false); try { setSaving(true); await upsertBrandInformation(updatedBrandInfo, currentOrganization.organization_id); alert('Brand information saved successfully!'); } catch (error) { console.error('Error saving brand information:', error); alert('Failed to save brand information. Please try again.'); } finally { setSaving(false); } }} className="flex-1 flex flex-col justify-center">
-              <div className="flex-1 px-6 py-8 flex flex-col justify-center space-y-4">
-                {/* Logo upload */}
-                <div className="mb-6">
-                  <div className="mb-2">
-                    <span className="block text-sm font-medium text-gray-700">Logo</span>
-                    <span className="block text-xs text-gray-500">Upload your company logo for branding.</span>
-                  </div>
-                  <div className="border border-gray-200 bg-gray-100 rounded-lg px-4 py-4 flex items-center space-x-6 w-full max-w-md">
-                    {/* Logo or Placeholder */}
-                    <div className="w-28 h-28 flex items-center justify-center bg-white rounded-lg overflow-hidden border border-gray-200">
-                      {editDraft.logo_url ? (
-                        <img src={editDraft.logo_url} alt="Logo Preview" className="object-contain w-full h-full" />
-                      ) : (
-                        <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                      )}
-                    </div>
-                    {/* Replace Button Only */}
-                    <div className="flex flex-col items-start space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => document.getElementById('brand-logo-file-input').click()}
-                        className="px-3 py-1 text-xs font-medium bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                        onClick={() => handleRemoveLogoRule(index)}
+                        className="text-red-500 hover:text-red-700 text-sm"
                       >
-                        Replace image
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+                  ))}
+                  {(brandInfo.logo_rules || []).length === 0 && (
+                    <p className="text-gray-500 text-sm italic">No logo rules added yet. Add rules to guide your team on proper logo usage.</p>
+                  )}
+              </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {selectedSection === 'colours' && (
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Brand Colours</h2>
+            <div className="flex flex-wrap gap-6 mb-6">
+              {(brandInfo.color_palette || ['#6366F1', '#8B5CF6', '#EC4899', '#F59E0B']).map((color, idx) => (
+                <div key={color + idx} className="flex flex-col items-center">
+                  {/* Paint card */}
+                  <div className="w-20 h-44 rounded-lg shadow border border-gray-200 flex flex-col justify-end relative overflow-hidden" style={{ background: color }}>
+                    {/* White box with hex code at bottom */}
+                    <div className="w-full bg-white rounded-b-lg px-2 py-2 flex flex-col items-center absolute bottom-0 left-0">
+                      <span className="text-xs font-mono text-gray-800">{color}</span>
+                    </div>
+                    {/* Edit/Download buttons */}
+                    <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                      <button className="bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-purple-50" title="Edit Colour">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2l-6 6m-2 2h6" /></svg>
                       </button>
+                      <button className="bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-purple-50" title="Download Colour">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* Add Colour card */}
+              <button className="w-20 h-44 bg-white border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center hover:bg-purple-50 transition-colors" onClick={() => alert('Open add colour modal (placeholder)')}> 
+                <svg className="w-8 h-8 text-purple-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span className="text-xs text-purple-600 font-medium">Add Colour</span>
+              </button>
+            </div>
+            {/* Colour usage rules/info box - moved to bottom */}
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded text-sm text-yellow-900 max-w-2xl mt-8">
+              <strong>Colour Usage:</strong> Use primary brand colours for main UI elements and backgrounds. Accent colours should be used sparingly for highlights, buttons, or calls to action. Ensure sufficient contrast for accessibility. Never use unofficial shades or tints.
+            </div>
+          </div>
+        )}
+        {selectedSection === 'messaging' && (
+          <div className="max-w-2xl">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Brand Messaging</h2>
+            {/* Tagline - card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <div className="font-medium text-gray-700 mb-1">Tagline</div>
+              <div className="bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-base leading-relaxed">
+                {brandInfo.tagline || <span className="text-gray-400">No tagline set</span>}
+              </div>
+            </div>
+            {/* Brand Blurb - card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <div className="font-medium text-gray-700 mb-1">Description</div>
+              <div className="bg-gray-50 rounded-lg px-4 py-3 text-gray-900 text-base leading-relaxed">
+                {brandInfo.brand_blurb || <span className="text-gray-400">No brand blurb set</span>}
+              </div>
+            </div>
+            {/* Team Bios - card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <div className="font-medium text-gray-700 mb-1">Team Bios</div>
+              <div className="bg-gray-50 rounded-lg px-4 py-3">
+                <ul className="space-y-3">
+                  {(brandInfo.bios && brandInfo.bios.length > 0) ? brandInfo.bios.map((bio, idx) => (
+                    <li key={idx} className="text-sm text-gray-800 border-l-4 border-purple-200 pl-3">{bio}</li>
+                  )) : (
+                    <li className="text-gray-400">No team bios set</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <Modal isOpen={showUploadModal} onClose={() => setShowUploadModal(false)}>
+          <form onSubmit={handleLogoUpload} className="p-6 max-w-md">
+            <h2 className="text-lg font-bold mb-4">Upload {uploadingMainLogo ? 'Main Logo' : 'Logo Variation'}</h2>
                       <input
-                        id="brand-logo-file-input"
                         type="file"
                         accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (ev) => setEditDraft(d => ({ ...d, logo_url: ev.target.result }));
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* Tagline */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Tagline</label>
-                  <input
-                    type="text"
-                    value={editDraft.tagline}
-                    onChange={e => setEditDraft(d => ({ ...d, tagline: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                    placeholder="Your brand tagline"
-                  />
-                </div>
-                {/* Blurb */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Brand Description</label>
-                  <textarea
-                    value={editDraft.brand_blurb}
-                    onChange={e => setEditDraft(d => ({ ...d, brand_blurb: e.target.value }))}
-                    rows={2}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                    placeholder="Brief description of your brand"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50"
-                  disabled={saving}
-                >
-                  Save
+              onChange={e => setUploadFile(e.target.files[0])}
+              className="mb-4"
+              required
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button type="button" onClick={() => setShowUploadModal(false)} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">Cancel</button>
+              <button type="submit" disabled={uploading || !uploadFile} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm disabled:opacity-50">
+                {uploading ? 'Uploading...' : 'Upload'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
-      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
 };

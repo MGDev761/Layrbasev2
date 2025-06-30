@@ -195,10 +195,10 @@ const SalesCollateral = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2 mt-2">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Sales Collateral</h1>
-          <p className="text-gray-600 text-sm mb-6">Manage your sales materials including decks, one-pagers, case studies, and pricing sheets.</p>
+          <p className="text-gray-600 text-sm mb-2">Manage your sales materials including decks, one-pagers, case studies, and pricing sheets.</p>
         </div>
         <button
           onClick={() => setShowHelpModal(true)}
@@ -210,8 +210,8 @@ const SalesCollateral = () => {
         </button>
       </div>
 
-      {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      {/* Actions Bar - now visually attached to table */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row gap-4 flex-1">
           <div className="relative flex-1 max-w-md">
             <svg className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,7 +222,7 @@ const SalesCollateral = () => {
               placeholder="Search collateral..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
             />
           </div>
           {selectedItems.length > 0 && (
@@ -248,9 +248,9 @@ const SalesCollateral = () => {
         </button>
       </div>
 
-      {/* Collateral Table */}
-      <div className="bg-white border border-gray-300 rounded-md overflow-visible">
-        <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+      {/* Collateral Table - flat, no border/shadow, rounded bottom only */}
+      <div className="bg-white rounded-b-md overflow-visible">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

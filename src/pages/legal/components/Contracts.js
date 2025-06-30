@@ -638,58 +638,105 @@ const Contracts = () => {
         </button>
       </div>
       <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
-      <div className="flex h-full">
-        <div className="w-64 bg-gray-50 py-4 pr-6">
-          <h2 className="text-lg font-semibold mb-4">Folders</h2>
-          <ul className="space-y-1">
-            <li>
-              <a href="#" onClick={(e) => { e.preventDefault(); setSelectedFolder('all'); }} className={`block px-3 py-2 rounded-md text-sm font-medium ${selectedFolder === 'all' ? 'bg-purple-100 text-purple-700' : 'text-gray-600 hover:bg-gray-100'}`}>
-                All Contracts
-              </a>
-            </li>
-            {folders.map(folder => (
-              <li key={folder.id}>
-                <a href="#" onClick={(e) => { e.preventDefault(); setSelectedFolder(folder.id); }} className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${selectedFolder === folder.id ? 'bg-purple-100 text-purple-700' : 'text-gray-600 hover:bg-gray-100'}`}>
-                  <FolderIcon className="h-5 w-5 mr-2" />
-                  {folder.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <button 
-            onClick={() => setShowFolderModal(true)} 
-            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+      
+      {/* Folders Section - moved to top */}
+      <div className="mb-6">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          {/* All Contracts Card */}
+          <div 
+            onClick={() => setSelectedFolder('all')}
+            className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+              selectedFolder === 'all' 
+                ? 'border-purple-500 bg-purple-50' 
+                : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+            }`}
           >
-            <PlusIcon className="w-4 h-4 mr-1.5" />
-            Create Folder
+            <div className="flex flex-col">
+              <div className="flex items-center mb-1">
+                <FolderIcon className={`h-5 w-5 mr-2 ${
+                  selectedFolder === 'all' ? 'text-purple-600' : 'text-gray-500'
+                }`} />
+                <span className={`text-xs font-medium ${
+                  selectedFolder === 'all' ? 'text-purple-700' : 'text-gray-700'
+                }`}>
+                  All Contracts
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 ml-7">
+                {contracts.length} contracts
+              </div>
+            </div>
+          </div>
+          {/* Folder Cards */}
+          {folders.map(folder => {
+            const contractCount = contracts.filter(contract => contract.folder_id === folder.id).length;
+            return (
+              <div 
+                key={folder.id}
+                onClick={() => setSelectedFolder(folder.id)}
+                className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  selectedFolder === folder.id 
+                    ? 'border-purple-500 bg-purple-50' 
+                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex flex-col">
+                  <div className="flex items-center mb-1">
+                    <FolderIcon className={`h-5 w-5 mr-2 ${
+                      selectedFolder === folder.id ? 'text-purple-600' : 'text-gray-500'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      selectedFolder === folder.id ? 'text-purple-700' : 'text-gray-700'
+                    }`}>
+                      {folder.name}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 ml-7">
+                    {contractCount} contracts
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {/* Create Folder Card */}
+          <button
+            onClick={() => setShowFolderModal(true)}
+            className="p-3 rounded-lg border-2 border-dashed border-purple-300 bg-white flex flex-col items-center justify-center cursor-pointer hover:bg-purple-50 transition-all duration-200"
+            style={{ minHeight: 72 }}
+          >
+            <PlusIcon className="h-6 w-6 text-purple-400 mb-1" />
+            <span className="text-xs font-medium text-purple-600">Create Folder</span>
           </button>
         </div>
+      </div>
 
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-6">
-            <div className="relative w-full max-w-xs">
-              <MagnifyingGlassIcon className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search contracts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
-              />
+      {/* Contracts Section */}
+      <div className="mb-6">
+        {loading ? (
+          <div className="text-center py-10">Loading contracts...</div>
+        ) : (
+          <>
+            {/* Search bar and upload button attached to top of table */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
+              <div className="relative w-full max-w-xs">
+                <MagnifyingGlassIcon className="absolute h-4 w-4 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search contracts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 border-b-2 border-transparent focus:outline-none focus:border-purple-500 text-sm"
+                />
+              </div>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 ml-2"
+              >
+                <ArrowUpTrayIcon className="w-4 h-4 mr-1.5" />
+                Upload
+              </button>
             </div>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-            >
-              <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
-              Upload Contract
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-10">Loading contracts...</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -723,8 +770,8 @@ const Contracts = () => {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+          </>
+        )}
       </div>
       <UploadModal 
         showModal={showUploadModal}

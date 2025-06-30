@@ -305,11 +305,11 @@ const ComplianceDeadlines = () => {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between mb-2">
+    <div>
+      <div className="flex items-center justify-between mb-2 mt-2">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Compliance Deadlines</h2>
-          <p className="text-gray-600 text-sm">Track upcoming legal and regulatory deadlines to stay compliant.</p>
+          <p className="text-gray-600 text-sm mb-2">Track upcoming legal and regulatory deadlines to stay compliant.</p>
         </div>
         <button
           onClick={() => setShowInfoModal(true)}
@@ -322,16 +322,19 @@ const ComplianceDeadlines = () => {
       </div>
       <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
 
-      <div className="flex justify-between items-center">
-        <div className="flex-1 relative max-w-xs">
-          <MagnifyingGlassIcon className="pointer-events-none absolute top-2.5 left-3 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search deadlines..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
-          />
+      {/* Actions Bar - now visually attached to table */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="relative flex-1 max-w-md">
+            <MagnifyingGlassIcon className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search deadlines..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
+            />
+          </div>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -427,8 +430,9 @@ const ComplianceDeadlines = () => {
         </div>
       )}
 
-      <div className="bg-white overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+      {/* Table Container - flat, no border/shadow, rounded bottom only */}
+      <div className="bg-white rounded-b-md overflow-visible">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -449,53 +453,63 @@ const ComplianceDeadlines = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredDeadlines.map(deadline => (
-              <tr key={deadline.id} className={deadline.is_overdue ? 'bg-red-50' : ''}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{deadline.name}</div>
-                  {deadline.description && (
-                    <div className="text-sm text-gray-500">{deadline.description}</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {new Date(deadline.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {filteredDeadlines.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-16">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-sm">No deadlines found</p>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {getDaysUntilDueText(deadline.days_until_due, deadline.is_overdue)}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <select
-                    value={deadline.status}
-                    onChange={(e) => handleStatusChange(deadline.id, e.target.value)}
-                    className={`text-sm font-medium rounded-full px-2.5 py-0.5 ${getStatusColor(deadline.status, deadline.is_overdue)}`}
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="completed">Completed</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {deadline.category ? deadline.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'General'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleDeleteDeadline(deadline.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredDeadlines.map(deadline => (
+                <tr key={deadline.id} className={deadline.is_overdue ? 'bg-red-50' : ''}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{deadline.name}</div>
+                    {deadline.description && (
+                      <div className="text-sm text-gray-500">{deadline.description}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {new Date(deadline.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {getDaysUntilDueText(deadline.days_until_due, deadline.is_overdue)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <select
+                      value={deadline.status}
+                      onChange={(e) => handleStatusChange(deadline.id, e.target.value)}
+                      className={`text-sm font-medium rounded-full px-2.5 py-0.5 ${getStatusColor(deadline.status, deadline.is_overdue)}`}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="completed">Completed</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {deadline.category ? deadline.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'General'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleDeleteDeadline(deadline.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {filteredDeadlines.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No deadlines found</p>
-          </div>
-        )}
       </div>
     </div>
   );
