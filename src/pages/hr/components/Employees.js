@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { fetchEmployees, addEmployee, updateEmployee, deleteEmployee, linkUserToEmployee, unlinkUserFromEmployee, fetchEmployeeByUserId } from '../../../services/employeesService';
 import { fetchHolidays } from '../../../services/holidaysService';
+import { createLeaveBalances } from '../../../services/leaveService';
 import { supabase } from '../../../lib/supabase';
 import Card from '../../../components/common/layout/Card';
 import OrgChart from './layout/OrgChart';
@@ -68,6 +69,13 @@ const Employees = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [leaveBalances, setLeaveBalances] = useState({
+    holiday: 25,
+    sick: 10,
+    unpaid: 0,
+    parental: 0,
+    custom: 0
+  });
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -96,10 +104,19 @@ const Employees = () => {
 
   // Fetch users for linking
   useEffect(() => {
-    supabase.auth.admin.listUsers({ perPage: 1000 }).then(({ data }) => {
-      setUsers(data?.users || []);
-    });
-  }, []);
+    if (!currentOrganization) return;
+    supabase
+      .rpc('get_org_members_full', { org_id: currentOrganization.organization_id })
+      .then(({ data, error }) => {
+        if (error) { setUsers([]); return; }
+        setUsers((data || []).map(row => ({
+          id: row.user_id,
+          first_name: row.name?.split(' ')[0] || '',
+          last_name: row.name?.split(' ').slice(1).join(' ') || '',
+          email: row.email || '',
+        })));
+      });
+  }, [currentOrganization]);
 
   // Fetch current user id
   useEffect(() => {
@@ -179,7 +196,16 @@ const Employees = () => {
       if (editingId) {
         await updateEmployee(editingId, form);
       } else {
-        await addEmployee({ ...form, organization_id: currentOrganization.organization_id });
+        const newEmployee = await addEmployee({ ...form, organization_id: currentOrganization.organization_id });
+        
+        // Create leave balances for new employee
+        const balances = Object.entries(leaveBalances)
+          .filter(([_, balance]) => balance > 0)
+          .map(([type, balance]) => ({ type, balance }));
+        
+        if (balances.length > 0) {
+          await createLeaveBalances(currentOrganization.organization_id, newEmployee.id, balances);
+        }
       }
       setModalOpen(false);
       loadEmployees();
@@ -408,10 +434,10 @@ const Employees = () => {
                     <div className="text-xs text-gray-400">{employee.team}</div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                    {employee.manager || '-'}
+                    {employee.manager || (employees && employee.manager_id ? (employees.find(e => e.id === employee.manager_id)?.name || '-') : '-')}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(employee.startDate)}
+                    {(employee.startDate || employee.start_date) ? (isNaN(new Date(employee.startDate || employee.start_date).getTime()) ? '-' : new Date(employee.startDate || employee.start_date).toLocaleDateString('en-GB')) : '-'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -420,12 +446,12 @@ const Employees = () => {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {employee.holidayTaken}/{employee.holidayTaken + employee.holidayRemaining} taken
+                      {Number.isFinite(employee.holidayTaken) ? employee.holidayTaken : 0}/{Number.isFinite(employee.holidayTaken) && Number.isFinite(employee.holidayRemaining) ? employee.holidayTaken + employee.holidayRemaining : 0} taken
                     </div>
                     <div className="text-xs text-gray-500">
-                      {employee.holidayRemaining} remaining
+                      {Number.isFinite(employee.holidayRemaining) ? employee.holidayRemaining : 0} remaining
                     </div>
-                    {employee.sickDays > 0 && (
+                    {Number.isFinite(employee.sickDays) && employee.sickDays > 0 && (
                       <div className="text-xs text-red-500">
                         {employee.sickDays} sick days
                       </div>
@@ -454,18 +480,38 @@ const Employees = () => {
         </div>
       </div>
       ) : (
-        <OrgChart />
+        <OrgChart onEmployeeClick={openProfileModal} />
       )}
 
       {/* Add/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg border border-gray-100">
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg max-h-[95vh] overflow-y-auto border border-gray-100">
             <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
               <div className="text-lg font-medium text-gray-900">{editingId ? 'Edit' : 'Add'} Employee</div>
               <button type="button" onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div className="space-y-3">
+              <select className="w-full px-3 py-2 border rounded" value={form.user_id || ''} onChange={e => {
+                const selectedUser = users.find(u => u.id === e.target.value);
+                setForm(f => ({
+                  ...f,
+                  user_id: e.target.value || null,
+                  name: (!f.name && selectedUser) ? (selectedUser.first_name + ' ' + selectedUser.last_name || selectedUser.email || '') : f.name,
+                  email: (!f.email && selectedUser) ? selectedUser.email : f.email
+                }));
+              }}>
+                <option value="">No Linked User</option>
+                {form.user_id && !users.find(u => u.id === form.user_id) && (
+                  <option value={form.user_id} disabled>
+                    {form.email || form.user_id} (not in user list)
+                  </option>
+                )}
+                {users.map(u => {
+                  const label = (u.first_name || u.last_name) ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : (u.email || `Unknown User (${u.id})`);
+                  return <option key={u.id} value={u.id}>{label}</option>;
+                })}
+              </select>
               <input className="w-full px-3 py-2 border rounded" placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
               <input className="w-full px-3 py-2 border rounded" placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
               <input className="w-full px-3 py-2 border rounded" placeholder="Position" value={form.position} onChange={e => setForm(f => ({ ...f, position: e.target.value }))} />
@@ -479,12 +525,65 @@ const Employees = () => {
               <input className="w-full px-3 py-2 border rounded" type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} />
               <input className="w-full px-3 py-2 border rounded" placeholder="Contract Type" value={form.contract_type} onChange={e => setForm(f => ({ ...f, contract_type: e.target.value }))} />
               <textarea className="w-full px-3 py-2 border rounded" placeholder="Profile" value={form.profile} onChange={e => setForm(f => ({ ...f, profile: e.target.value }))} />
-              <select className="w-full px-3 py-2 border rounded" value={form.user_id || ''} onChange={e => setForm(f => ({ ...f, user_id: e.target.value || null }))}>
-                <option value="">No Linked User</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.email}</option>
-                ))}
-              </select>
+              
+              {/* Leave Balance Section */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Initial Leave Balances</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Holiday (days)</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={leaveBalances.holiday || 0} 
+                      onChange={e => setLeaveBalances(lb => ({ 
+                        ...lb, 
+                        holiday: parseInt(e.target.value) || 0
+                      }))} 
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Sick Leave (days)</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={leaveBalances.sick || 0} 
+                      onChange={e => setLeaveBalances(lb => ({ 
+                        ...lb, 
+                        sick: parseInt(e.target.value) || 0
+                      }))} 
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Unpaid Leave (days)</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={leaveBalances.unpaid || 0} 
+                      onChange={e => setLeaveBalances(lb => ({ 
+                        ...lb, 
+                        unpaid: parseInt(e.target.value) || 0
+                      }))} 
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Parental Leave (days)</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={leaveBalances.parental || 0} 
+                      onChange={e => setLeaveBalances(lb => ({ 
+                        ...lb, 
+                        parental: parseInt(e.target.value) || 0
+                      }))} 
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end space-x-2 mt-8">
               <button type="button" onClick={() => setModalOpen(false)} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Cancel</button>
@@ -516,17 +615,15 @@ const Employees = () => {
             <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-3xl z-10" onClick={() => setProfileModalOpen(false)}>&times;</button>
             <div className="p-0 overflow-y-auto h-full">
               {/* Header */}
-              <div className="flex flex-col items-center justify-center bg-gray-50 border-b border-gray-200 pt-10 pb-6 px-8">
-                <div className="w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold text-white mb-4" style={{ background: '#7c3aed' }}>
+              <div className="flex items-center bg-gray-50 border-b border-gray-200 px-8 py-6">
+                <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white bg-blue-100 mr-6" style={{ color: '#2563eb', background: '#e0e7ff' }}>
                   {profileEmployee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{profileEmployee.name}</div>
-                <div className="text-gray-500 text-lg mb-2">{profileEmployee.position}</div>
-                <div className="flex flex-wrap gap-x-8 gap-y-1 text-sm text-gray-600 justify-center">
-                  <div><b>Email:</b> {profileEmployee.email}</div>
-                  <div><b>Start Date:</b> {profileEmployee.start_date || '-'}</div>
-                  <div><b>Contract:</b> {profileEmployee.contract_type || '-'}</div>
-                  <div><b>Manager:</b> {employees.find(e => e.id === profileEmployee.manager_id)?.name || '-'}</div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-gray-900">{profileEmployee.name}</span>
+                  <span className="text-gray-700 text-lg font-medium">{profileEmployee.position || '-'}</span>
+                  <span className="text-gray-500 text-base">{profileEmployee.department || '-'}</span>
+                  <span className="text-gray-500 text-base">{profileEmployee.email}</span>
                 </div>
               </div>
               {/* Tabs */}

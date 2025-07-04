@@ -237,31 +237,37 @@ const MyOrganizations = () => {
                             <td className="px-4 py-2 text-sm text-gray-900">{member.name}</td>
                             <td className="px-4 py-2 text-sm text-gray-900">{member.email}</td>
                             <td className="px-4 py-2 text-sm text-gray-900">
-                              {editRoleId === member.user_id ? (
-                                <span className="flex items-center gap-2">
-                                  <select
-                                    className="border border-gray-300 rounded px-2 py-1 text-xs"
-                                    value={editRoleValue}
-                                    onChange={e => setEditRoleValue(e.target.value)}
-                                  >
-                                    {roleOptions.map(opt => (
-                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                  </select>
-                                  <button onClick={() => handleRoleSave(member.user_id)} className="text-green-600 hover:text-green-800"><CheckIcon className="w-4 h-4" /></button>
-                                </span>
+                              {isAdmin ? (
+                                editRoleId === member.user_id ? (
+                                  <span className="flex items-center gap-2">
+                                    <select
+                                      className="border border-gray-300 rounded px-2 py-1 text-xs"
+                                      value={editRoleValue}
+                                      onChange={e => setEditRoleValue(e.target.value)}
+                                    >
+                                      {roleOptions.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                      ))}
+                                    </select>
+                                    <button onClick={() => handleRoleSave(member.user_id)} className="text-green-600 hover:text-green-800"><CheckIcon className="w-4 h-4" /></button>
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-2">
+                                    {member.role}
+                                    <button onClick={() => handleRoleEdit(member.user_id, member.role)} className="text-gray-400 hover:text-purple-600"><PencilIcon className="w-4 h-4" /></button>
+                                  </span>
+                                )
                               ) : (
-                                <span className="flex items-center gap-2">
-                                  {member.role}
-                                  <button onClick={() => handleRoleEdit(member.user_id, member.role)} className="text-gray-400 hover:text-purple-600"><PencilIcon className="w-4 h-4" /></button>
-                                </span>
+                                <span>{member.role}</span>
                               )}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-900">{member.created_at ? new Date(member.created_at).toLocaleDateString() : ''}</td>
                             <td className="px-4 py-2 text-sm text-gray-900">{member.last_login ? new Date(member.last_login).toLocaleDateString() : ''}</td>
                             <td className="px-4 py-2 text-sm text-gray-900">{member.is_active ? 'Yes' : 'No'}</td>
                             <td className="px-4 py-2 text-sm">
-                              <button onClick={() => handleRemoveMember(member.user_id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
+                              {isAdmin && (
+                                <button onClick={() => handleRemoveMember(member.user_id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
+                              )}
                             </td>
                           </tr>
                         ))}

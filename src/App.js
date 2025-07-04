@@ -14,6 +14,7 @@ import JoinOrganizationPage from './pages/JoinOrganization';
 import BudgetLanding from './pages/finance/BudgetLanding';
 import Budget from './pages/finance/components/budget/Budget';
 import ProtectedLayout from './ProtectedLayout';
+import Tasks from './pages/tasks';
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
         <Route path="marketing" element={<Navigate to="marketing/events" replace />} />
         <Route path="sales" element={<Navigate to="sales/crm" replace />} />
         <Route path="hr" element={<Navigate to="hr/employees" replace />} />
+        <Route path="tasks" element={<Tasks />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>

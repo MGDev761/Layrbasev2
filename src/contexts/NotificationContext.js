@@ -2,10 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
 import { 
-  getNotifications, 
+  fetchNotifications, 
   getUnreadCount, 
-  markAsRead, 
-  markAllAsRead 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead 
 } from '../services/notificationService';
 
 const NotificationContext = createContext();
@@ -25,16 +25,20 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const loadNotifications = async () => {
-    if (!user?.id || !currentOrganization?.organization_id) return;
+    if (!user?.id || !currentOrganization?.organization_id) {
+      console.log('Cannot load notifications - missing user or org:', { userId: user?.id, orgId: currentOrganization?.organization_id }); // Debug log
+      return;
+    }
     
+    console.log('Loading notifications for user:', user.id, 'org:', currentOrganization.organization_id); // Debug log
     setLoading(true);
     try {
-      const [notifs, count] = await Promise.all([
-        getNotifications(currentOrganization.organization_id, user.id),
-        getUnreadCount(currentOrganization.organization_id, user.id)
+      const [notifs] = await Promise.all([
+        fetchNotifications(user.id, currentOrganization.organization_id)
       ]);
-      setNotifications(notifs);
-      setUnreadCount(count);
+      console.log('Loaded notifications:', notifs); // Debug log
+      setNotifications(notifs || []);
+      setUnreadCount((notifs || []).filter(n => n && n.read === false).length);
     } catch (error) {
       console.error('Error loading notifications:', error);
     } finally {
@@ -42,9 +46,9 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  const markNotificationAsRead = async (notificationId) => {
+  const markNotificationAsReadHandler = async (notificationId) => {
     try {
-      await markAsRead(notificationId);
+      await markNotificationAsRead(notificationId);
       setNotifications(prev => 
         prev.map(notif => 
           notif.id === notificationId 
@@ -58,11 +62,11 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  const markAllNotificationsAsRead = async () => {
+  const markAllNotificationsAsReadHandler = async () => {
     if (!user?.id || !currentOrganization?.organization_id) return;
     
     try {
-      await markAllAsRead(currentOrganization.organization_id, user.id);
+      await markAllNotificationsAsRead(user.id, currentOrganization.organization_id);
       setNotifications(prev => 
         prev.map(notif => ({ ...notif, read: true }))
       );
@@ -73,10 +77,13 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const addNotification = (notification) => {
-    setNotifications(prev => [notification, ...prev]);
-    if (!notification.read) {
-      setUnreadCount(prev => prev + 1);
-    }
+    setNotifications(prev => {
+      const updated = [notification, ...prev];
+      setUnreadCount(updated.filter(n => n && n.read === false).length);
+      return updated;
+    });
+    // Force refresh to ensure bell icon updates
+    loadNotifications();
   };
 
   const removeNotification = (notificationId) => {
@@ -151,8 +158,8 @@ export const NotificationProvider = ({ children }) => {
     unreadCount,
     loading,
     loadNotifications,
-    markNotificationAsRead,
-    markAllNotificationsAsRead,
+    markNotificationAsRead: markNotificationAsReadHandler,
+    markAllNotificationsAsRead: markAllNotificationsAsReadHandler,
     addNotification,
     removeNotification
   };

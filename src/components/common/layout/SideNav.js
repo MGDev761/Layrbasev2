@@ -100,6 +100,7 @@ const SideNav = ({
       { id: 'time', name: 'Time Manager' },
       { id: 'policies', name: 'Company Policies' },
     ],
+    tasks: [],
   };
 
   const handleCreateSuccess = async (organization) => {
@@ -254,6 +255,14 @@ const SideNav = ({
             <span>Marketplace</span>
           </div>
         </button>
+
+        {/* Add Task Manager nav item if not in tabs */}
+        {!tabs.some(tab => tab.id === 'tasks') && (
+          <Link to="/tasks" className="w-full flex items-center px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50">
+            {/* Optionally add an icon here */}
+            <span className="ml-2">Task Manager</span>
+          </Link>
+        )}
       </nav>
 
       {/* Create Organization Modal */}

@@ -546,62 +546,39 @@ const ContactsList = forwardRef(({ searchTerm, filterStatus }, ref) => {
                       </div>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <EditableField 
-                      label="First Name" 
-                      value={selectedContact.first_name} 
-                      field="first_name" 
-                    />
-                    <EditableField 
-                      label="Last Name" 
-                      value={selectedContact.last_name} 
-                      field="last_name" 
-                    />
-                    <EditableField 
-                      label="Email" 
-                      value={selectedContact.email} 
-                      field="email" 
-                      type="email" 
-                    />
-                    <EditableField 
-                      label="Phone" 
-                      value={selectedContact.phone} 
-                      field="phone" 
-                      type="tel" 
-                    />
-                    <EditableField 
-                      label="Position" 
-                      value={selectedContact.position} 
-                      field="position" 
-                    />
-                    <EditableField 
-                      label="Status" 
-                      value={selectedContact.status} 
-                      field="status" 
-                      type="select"
-                      options={[
-                        { value: 'prospect', label: 'Prospect' },
-                        { value: 'lead', label: 'Lead' },
-                        { value: 'customer', label: 'Customer' },
-                        { value: 'inactive', label: 'Inactive' }
-                      ]}
-                    />
-                    <EditableField 
-                      label="Lead Score" 
-                      value={selectedContact.lead_score} 
-                      field="lead_score" 
-                      type="number" 
-                    />
-                    <EditableField 
-                      label="Company" 
-                      value={getCompanyName(selectedContact.company_id)} 
-                      field="company_id" 
-                      type="select"
-                      options={companies.map(company => ({
-                        value: company.id,
-                        label: company.name
-                      }))}
-                    />
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">First Name</div>
+                      <div className="text-gray-900 font-medium">{selectedContact.first_name || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">Last Name</div>
+                      <div className="text-gray-900 font-medium">{selectedContact.last_name || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">Email</div>
+                      <div className="text-gray-900 font-medium">{selectedContact.email || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">Phone</div>
+                      <div className="text-gray-900 font-medium">{selectedContact.phone || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">Position</div>
+                      <div className="text-gray-900 font-medium">{selectedContact.position || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">Status</div>
+                      <div className="text-gray-900 font-medium capitalize">{selectedContact.status || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">Lead Score</div>
+                      <div className="text-gray-900 font-medium">{selectedContact.lead_score ?? '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 font-semibold mb-1">Company</div>
+                      <div className="text-gray-900 font-medium">{getCompanyName(selectedContact.company_id) || '-'}</div>
+                    </div>
                   </div>
                 </div>
               )}

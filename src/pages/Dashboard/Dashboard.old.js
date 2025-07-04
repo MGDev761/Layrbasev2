@@ -16,6 +16,7 @@ import {
   ClockIcon
 } from '@heroicons/react/20/solid';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { fetchMyTasks } from '../../services/taskService';
 
 // Icon helper for notifications
 const getIcon = (type) => {
@@ -32,7 +33,7 @@ const getIcon = (type) => {
 };
 
 const Dashboard = () => {
-  const { currentOrganization } = useAuth();
+  const { currentOrganization, user } = useAuth();
   const { notifications } = useNotifications();
   const { totals: budgetTotals, loading: budgetLoading } = useBudget({ isForecast: false });
   const { totals: forecastTotals, loading: forecastLoading } = useBudget({ isForecast: true });
@@ -147,62 +148,72 @@ const Dashboard = () => {
     }));
   };
 
-  // Notifications component
-  const Notifications = ({ notifications }) => {
+  // MyTasksWidget styled like Notifications, but with real data
+  const MyTasksWidget = () => {
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+      if (!currentOrganization?.organization_id || !user?.id) {
+        setTasks([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      fetchMyTasks(currentOrganization.organization_id, user.id, 5)
+        .then(setTasks)
+        .catch(setError)
+        .finally(() => setLoading(false));
+    }, [currentOrganization, user]);
+
     return (
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
-          <button
-            onClick={() => setShowNotificationModal(true)}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            View all →
-          </button>
+      <div className="bg-white rounded-md flex flex-col h-[280px]">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg">
+          <h2 className="text-base font-semibold text-gray-900">My Tasks</h2>
         </div>
-        <div className="bg-white rounded-md flex flex-col h-[216px] overflow-hidden">
-          <div className="divide-y divide-gray-100 max-h-full overflow-y-auto">
-            {notifications.length > 0 ? (
-              notifications.slice(0, 5).map((notification) => (
-                <button
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`w-full text-left p-3 hover:bg-gray-50 transition-colors ${
-                    !notification.read ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      {getIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className={`text-sm font-medium truncate ${
-                          !notification.read ? 'text-gray-900' : 'text-gray-600'
-                        }`}>
-                          {notification.title}
-                        </p>
-                        <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                          {new Date(notification.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 truncate mt-1">
-                        {notification.message}
-                      </p>
-                    </div>
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-gray-400">Loading...</div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full text-red-500">Error loading tasks</div>
+          ) : tasks.length > 0 ? (
+            tasks.map((task, idx) => (
+              <div key={task.id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium truncate text-gray-900">{task.title}</p>
+                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">Due: {task.due_date || '-'}</span>
                   </div>
-                </button>
-              ))
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                <div className="text-center">
-                  <BellIcon className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">No notifications</p>
-                  <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
+                  <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                    task.status === 'Done' ? 'bg-green-100 text-green-800' :
+                    task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                    task.status === 'Awaiting Review' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {task.status}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              <div className="text-center">
+                <ClockIcon className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">No tasks</p>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Footer (optional) */}
+        <div className="px-4 py-2 bg-gray-50 rounded-b-lg flex items-center justify-end">
+          <a href="/tasks" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+            Go to Tasks
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
         </div>
       </div>
     );
@@ -259,7 +270,7 @@ const Dashboard = () => {
         <div>
           <div className="bg-white rounded-md flex flex-col">
             {/* Top Bar */}
-            <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg">
               <h2 className="text-base font-semibold text-gray-900">Financial Overview</h2>
               <div className="flex space-x-2">
                 <button className="p-1 rounded hover:bg-gray-200" title="Settings">
@@ -341,72 +352,9 @@ const Dashboard = () => {
 
       {/* Notifications and Sales Activities - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Notifications */}
+        {/* Notifications (replaced with MyTasksWidget) */}
         {dashboardSections.notifications && (
-          <div>
-            <div className="bg-white rounded-md flex flex-col h-[280px]">
-              {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
-                <h2 className="text-base font-semibold text-gray-900">Notifications</h2>
-                <div className="flex space-x-2">
-                  <button className="p-1 rounded hover:bg-gray-200" title="Settings">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
-                {notifications.length > 0 ? (
-                  notifications.slice(0, 5).map((notification) => (
-                    <button
-                      key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      className={`w-full text-left p-3 hover:bg-gray-50 transition-colors ${
-                        !notification.read ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          {getIcon(notification.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className={`text-sm font-medium truncate ${
-                              !notification.read ? 'text-gray-900' : 'text-gray-600'
-                            }`}>
-                              {notification.title}
-                            </p>
-                            <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                              {notification.time}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    <div className="text-center">
-                      <svg className="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                      <p className="text-sm">No notifications</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* Footer */}
-              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
-                <a href="/notifications" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
-                  Go to Notifications
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </div>
+          <MyTasksWidget />
         )}
 
         {/* Sales Activities */}
@@ -414,7 +362,7 @@ const Dashboard = () => {
           <div>
             <div className="bg-white rounded-md flex flex-col h-[280px]">
               {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg">
                 <h2 className="text-base font-semibold text-gray-900">Sales Activities</h2>
                 <div className="flex space-x-2">
                   <button className="p-1 rounded hover:bg-gray-200" title="Add Lead">
@@ -473,7 +421,7 @@ const Dashboard = () => {
                 )}
               </div>
               {/* Footer */}
-              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
+              <div className="px-4 py-2 bg-gray-50 rounded-b-lg flex items-center justify-end">
                 <a href="/sales/crm" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                   Go to CRM
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -493,7 +441,7 @@ const Dashboard = () => {
           <div>
             <div className="bg-white rounded-md flex flex-col h-[280px]">
               {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg">
                 <h2 className="text-base font-semibold text-gray-900">Upcoming Marketing Releases</h2>
                 {/* Options (add, calendar, filter) */}
                 <div className="flex space-x-2">
@@ -562,7 +510,7 @@ const Dashboard = () => {
                 )}
               </div>
               {/* Footer */}
-              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
+              <div className="px-4 py-2 bg-gray-50 rounded-b-lg flex items-center justify-end">
                 <a href="/marketing/events" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                   Go to Events Calendar
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -579,7 +527,7 @@ const Dashboard = () => {
           <div>
             <div className="bg-white rounded-md flex flex-col h-[280px]">
               {/* Top Bar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg">
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-t-lg">
                 <h2 className="text-base font-semibold text-gray-900">Team Holidays</h2>
                 <div className="flex space-x-2">
                   <a href="/hr/holiday" className="p-1 rounded hover:bg-gray-200" title="View All">
@@ -638,8 +586,8 @@ const Dashboard = () => {
                 )}
               </div>
               {/* Footer */}
-              <div className="px-4 py-2 bg-white rounded-b-lg flex items-center justify-end">
-                <a href="/hr/holiday" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+              <div className="px-4 py-2 bg-gray-50 rounded-b-lg flex items-center justify-end">
+                <a href="/hr/time-manager" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                   View all in Time Manager
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />

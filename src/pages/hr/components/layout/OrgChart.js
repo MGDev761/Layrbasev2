@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { fetchEmployees } from '../../../../services/employeesService';
 
@@ -32,54 +32,100 @@ const findReportingPath = (node, selectedId) => {
   return null;
 };
 
-const MemberNode = ({ member, isRoot = false, onSelect, selectedId, reportingPath }) => {
+const MemberNode = ({ member, isRoot = false, onSelect, selectedId, reportingPath, onEmployeeClick }) => {
+  const [expanded, setExpanded] = useState(true);
   const isSelected = member.id === selectedId;
   const isInPath = reportingPath.includes(member.id);
   const hasChildInPath = member.children?.some(c => reportingPath.includes(c.id));
+  const hasChildren = member.children && member.children.length > 0;
+
+  // --- For dynamic line positioning ---
+  const childrenRefs = useRef([]);
+  const horizLineRef = useRef(null);
+  const [horizLineStyle, setHorizLineStyle] = useState({ left: '0px', width: '0px', top: '0px' });
+
+  useEffect(() => {
+    if (member.children && member.children.length > 1 && expanded) {
+      const first = childrenRefs.current[0];
+      const last = childrenRefs.current[member.children.length - 1];
+      if (first && last && horizLineRef.current) {
+        const parentRect = horizLineRef.current.parentNode.getBoundingClientRect();
+        const firstRect = first.getBoundingClientRect();
+        const lastRect = last.getBoundingClientRect();
+        const left = (firstRect.left + firstRect.width / 2) - parentRect.left;
+        const right = (lastRect.left + lastRect.width / 2) - parentRect.left;
+        setHorizLineStyle({
+          left: `${left}px`,
+          width: `${right - left}px`,
+          top: '0px',
+        });
+      }
+    }
+  }, [member.children, expanded]);
 
   return (
     <div className={`relative flex flex-col items-center ${isRoot ? '' : 'pt-0 min-h-0'}`} style={{ minWidth: '176px' }}>
-      {/* Connecting line from parent */}
-      {!isRoot && (
-        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full z-0 ${isInPath ? 'bg-purple-500' : 'bg-gray-300'}`} style={{ height: '32px' }}></div>
-      )}
-      {/* Member Box */}
-      <button
-        onClick={() => onSelect(member.id)}
-        className={`relative block text-left bg-white border ${isSelected ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-300'} rounded-md shadow-sm p-2 w-44 z-10 hover:border-purple-400 transition-all duration-150`}
-      >
-        <h3 className="text-sm font-bold text-gray-900 text-center">{member.name}</h3>
-        <p className="text-xs text-purple-600 font-semibold text-center">{member.position}</p>
-        <p className="text-xs text-gray-500 text-center mt-1">{member.department}</p>
-      </button>
-      {/* Render children if they exist */}
-      {member.children && member.children.length > 0 && (
-        <>
-          {/* Vertical line connecting to children's horizontal bar */}
-          <div className={`absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-full z-0 ${hasChildInPath ? 'bg-purple-500' : 'bg-gray-300'}`} style={{ height: '32px' }}></div>
-          <div className="flex justify-center mt-8 relative w-full min-w-max">
-            {/* Horizontal connecting line - only if more than one child */}
-            {member.children.length > 1 && (
-              <div className={`absolute top-0 left-0 right-0 h-0.5 z-0 ${hasChildInPath ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+      {/* Member Box + Expand/Collapse */}
+      <div className="relative flex flex-col items-center">
+        <button
+          onClick={() => onEmployeeClick ? onEmployeeClick(member) : onSelect(member.id)}
+          className={`relative block text-left bg-white border ${isSelected ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-300'} rounded-md shadow-sm p-2 w-44 z-10 hover:border-purple-400 transition-all duration-150 min-h-[140px]`}
+          style={{ minHeight: 140 }}
+        >
+          <h3 className="text-sm font-bold text-gray-900 text-center">{member.name}</h3>
+          <p className="text-xs text-purple-600 font-semibold text-center">{member.position}</p>
+          <p className="text-xs text-gray-500 text-center mt-1">{member.department}</p>
+          {/* Footer with team size and expand/collapse */}
+          <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+            <span>{hasChildren ? `${member.children.length} on team` : 'No team'}</span>
+            {hasChildren && (
+              <button
+                className="ml-2 bg-gray-100 border border-gray-300 rounded-full w-6 h-6 flex items-center justify-center text-xs text-gray-600 hover:bg-gray-200 z-20"
+                onClick={e => { e.stopPropagation(); setExpanded(e2 => !e2); }}
+                aria-label={expanded ? 'Collapse' : 'Expand'}
+                type="button"
+              >
+                {expanded ? <span>&#8722;</span> : <span>&#43;</span>}
+              </button>
             )}
+          </div>
+        </button>
+      </div>
+      {/* Render children if expanded */}
+      {hasChildren && expanded && (
+        <div className="relative w-full flex flex-col items-center" style={{ minHeight: '40px' }}>
+          {/* Vertical line from parent to horizontal line (overlap by 1px for perfect join) */}
+          <div className={`absolute left-1/2 -translate-x-1/2 top-0 w-0.5 z-10 ${hasChildInPath ? 'bg-purple-500' : 'bg-gray-300'}`} style={{ height: '21px' }}></div>
+          {/* Horizontal line above children, dynamically positioned (move up by 1px for perfect join) */}
+          {member.children.length > 1 && (
+            <div ref={horizLineRef} className={`absolute h-0.5 z-0 ${hasChildInPath ? 'bg-purple-500' : 'bg-gray-300'}`} style={{ ...horizLineStyle, position: 'absolute', top: '20px' }}></div>
+          )}
+          {/* Children row with consistent gap */}
+          <div className="flex flex-row justify-center items-start gap-x-8 relative w-full min-w-max" style={{ marginTop: '20px' }}>
             {member.children.map((child, idx) => (
-              <div key={child.id} className="px-2 flex flex-col items-center">
+              <div key={child.id} className="flex flex-col items-center relative" ref={el => childrenRefs.current[idx] = el}>
+                {/* Vertical line from horizontal to child box, perfectly centered */}
+                {member.children.length > 1 && (
+                  <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-0.5 z-10 ${hasChildInPath ? 'bg-purple-500' : 'bg-gray-300'}`} style={{ height: '20px' }}></div>
+                )}
+                {/* Recursive: render child node and its own children below */}
                 <MemberNode
                   member={child}
                   onSelect={onSelect}
                   selectedId={selectedId}
                   reportingPath={reportingPath}
+                  onEmployeeClick={onEmployeeClick}
                 />
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
 };
 
-const OrgChart = () => {
+const OrgChart = ({ onEmployeeClick }) => {
   const { currentOrganization } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +170,7 @@ const OrgChart = () => {
             onSelect={setSelectedId}
             selectedId={selectedId}
             reportingPath={reportingPath}
+            onEmployeeClick={onEmployeeClick}
           />
         ))}
       </div>

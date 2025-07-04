@@ -1,69 +1,91 @@
 import { supabase } from '../lib/supabase';
 
-// Get notifications for a user in an organization
-export async function getNotifications(orgId, userId, limit = 50) {
+// Fetch notifications for a user
+export async function fetchNotifications(userId, organizationId, limit = 50) {
+  console.log('Fetching notifications for user:', userId, 'org:', organizationId); // Debug log
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
-    .eq('organization_id', orgId)
     .eq('user_id', userId)
+    .eq('organization_id', organizationId)
     .order('created_at', { ascending: false })
     .limit(limit);
   
   if (error) throw error;
-  return data || [];
+  console.log('Fetched notifications:', data); // Debug log
+  return data;
 }
 
-// Get unread notifications count
-export async function getUnreadCount(orgId, userId) {
-  const { count, error } = await supabase
+// Get unread notification count
+export async function getUnreadCount(userId, organizationId) {
+  console.log('Getting unread count for user:', userId, 'org:', organizationId); // Debug log
+  const { data, error } = await supabase
     .from('notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
+    .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
+    .eq('organization_id', organizationId)
     .eq('read', false);
   
   if (error) throw error;
-  return count || 0;
+  console.log('Unread count:', data?.length || 0); // Debug log
+  return data?.length || 0;
 }
 
 // Mark notification as read
-export async function markAsRead(notificationId) {
-  const { data, error } = await supabase
+export async function markNotificationAsRead(notificationId) {
+  const { error } = await supabase
     .from('notifications')
     .update({ read: true })
-    .eq('id', notificationId)
-    .select()
-    .single();
+    .eq('id', notificationId);
   
   if (error) throw error;
-  return data;
 }
 
-// Mark all notifications as read
-export async function markAllAsRead(orgId, userId) {
-  const { data, error } = await supabase
+// Mark all notifications as read for a user
+export async function markAllNotificationsAsRead(userId, organizationId) {
+  const { error } = await supabase
     .from('notifications')
     .update({ read: true })
-    .eq('organization_id', orgId)
     .eq('user_id', userId)
-    .eq('read', false)
-    .select();
+    .eq('organization_id', organizationId)
+    .eq('read', false);
   
   if (error) throw error;
-  return data;
 }
 
-// Create a new notification
-export async function createNotification(notification) {
+// Create a notification
+export async function createNotification(notificationData) {
+  console.log('Creating notification:', notificationData); // Debug log
   const { data, error } = await supabase
     .from('notifications')
-    .insert([notification])
+    .insert(notificationData)
     .select()
     .single();
   
   if (error) throw error;
+  console.log('Notification created successfully:', data); // Debug log
   return data;
+}
+
+// Create a task assignment notification
+export async function createTaskAssignmentNotification(taskData, assignedUserId, organizationId) {
+  const notificationData = {
+    organization_id: organizationId,
+    user_id: assignedUserId,
+    type: 'info',
+    title: 'New Task Assigned',
+    message: `You have been assigned a new task: "${taskData.title}"`,
+    category: 'system',
+    data: {
+      task_id: taskData.id,
+      task_title: taskData.title,
+      due_date: taskData.due_date,
+      priority: taskData.priority,
+      link: `/tasks`
+    }
+  };
+  
+  return createNotification(notificationData);
 }
 
 // Delete a notification

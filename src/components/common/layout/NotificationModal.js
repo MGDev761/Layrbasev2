@@ -11,7 +11,9 @@ import {
 
 const getIcon = (type) => {
   switch (type) {
-    case 'success':
+    case 'task_assigned':
+      return <CheckCircleIcon className="h-5 w-5 text-blue-500" />;
+    case 'task_completed':
       return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
     case 'warning':
       return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
@@ -20,6 +22,21 @@ const getIcon = (type) => {
     case 'info':
     default:
       return <InformationCircleIcon className="h-5 w-5 text-blue-500" />;
+  }
+};
+
+const getTypeColor = (type) => {
+  switch (type) {
+    case 'task_assigned':
+      return 'bg-blue-100 text-blue-800';
+    case 'task_completed':
+      return 'bg-green-100 text-green-800';
+    case 'warning':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'error':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
 };
 
@@ -69,8 +86,9 @@ export default function NotificationModal({ isOpen, onClose }) {
       await markNotificationAsRead(notification.id);
     }
     
-    if (notification.action_url) {
-      window.location.href = notification.action_url;
+    // Handle task assignment notifications
+    if (notification.type === 'task_assigned' && notification.data?.link) {
+      window.location.href = notification.data.link;
     }
   };
 
@@ -153,8 +171,8 @@ export default function NotificationModal({ isOpen, onClose }) {
                           {notification.title}
                         </p>
                         <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(notification.category)}`}>
-                            {notification.category}
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(notification.type)}`}>
+                            {notification.type.replace('_', ' ')}
                           </span>
                           <span className="text-xs text-gray-500">
                             {formatTime(notification.created_at)}
@@ -164,10 +182,10 @@ export default function NotificationModal({ isOpen, onClose }) {
                       <p className="text-sm text-gray-600 mt-1">
                         {notification.message}
                       </p>
-                      {notification.action_text && (
+                      {notification.data?.link && (
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-blue-600 font-medium">
-                            {notification.action_text}
+                            View Task
                           </span>
                           {!notification.read && (
                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>

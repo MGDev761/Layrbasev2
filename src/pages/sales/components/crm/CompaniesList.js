@@ -359,7 +359,7 @@ export default function CompaniesList({ onBack }) {
               Contacts
             </button>
           </nav>
-        </div>
+          </div>
         {/* Top bar: search, filter, add button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row gap-4 flex-1">
@@ -387,12 +387,12 @@ export default function CompaniesList({ onBack }) {
               </select>
             )}
           </div>
-          <button
-            onClick={() => activeTab === 'companies' ? setShowModal(true) : contactsListRef.current?.openEdit()}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" /> Add {activeTab === 'companies' ? 'Company' : 'Contact'}
-          </button>
+            <button
+              onClick={() => activeTab === 'companies' ? setShowModal(true) : contactsListRef.current?.openEdit()}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" /> Add {activeTab === 'companies' ? 'Company' : 'Contact'}
+            </button>
         </div>
         {activeTab === 'companies' ? (
           <div className="bg-white rounded-md overflow-hidden">
@@ -940,4 +940,4 @@ export default function CompaniesList({ onBack }) {
       </div>
     </div>
   );
-}
+} 

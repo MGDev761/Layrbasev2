@@ -33,12 +33,13 @@ const Dashboard = () => {
     { label: 'Monthly Costs', value: costs.toLocaleString('en-US', { style: 'currency', currency: 'USD' }), change: '', positive: false },
   ];
 
-  // Mock marketing releases
-  const marketingReleases = [
-    { title: 'Q1 Product Launch Campaign', date: 'Mar 15, 2024', status: 'In Progress' },
-    { title: 'Brand Refresh Announcement', date: 'Mar 22, 2024', status: 'Scheduled' },
-    { title: 'Customer Success Story', date: 'Mar 28, 2024', status: 'Draft' },
-    { title: 'Industry Report Publication', date: 'Apr 5, 2024', status: 'Planning' },
+  // Mock tasks for dashboard widget
+  const myTasks = [
+    { title: 'Review contract for supplier', due: '2024-06-10', status: 'To Do' },
+    { title: 'Publish Q2 marketing report', due: '2024-06-12', status: 'In Progress' },
+    { title: 'Approve invoice #123', due: '2024-06-15', status: 'Awaiting Review' },
+    { title: 'Send contract to supplier', due: '2024-06-18', status: 'Done' },
+    { title: 'Update onboarding checklist', due: '2024-06-20', status: 'To Do' },
   ];
 
   // Mock team holidays
@@ -103,24 +104,24 @@ const Dashboard = () => {
 
       {/* Marketing Releases and Team Holidays */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Marketing Releases */}
+        {/* My Tasks Widget */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Marketing Releases</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">My Tasks</h2>
           <Card className="overflow-hidden">
             <div>
-              {marketingReleases.map((release, index) => (
+              {myTasks.map((task, index) => (
                 <div key={index} className="flex items-center justify-between p-4 border-b last:border-b-0 border-gray-100 bg-white">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900">{release.title}</h4>
-                    <p className="text-xs text-gray-500 mt-1">{release.date}</p>
+                    <h4 className="text-sm font-medium text-gray-900">{task.title}</h4>
+                    <p className="text-xs text-gray-500 mt-1">Due: {task.due}</p>
                   </div>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    release.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                    release.status === 'Scheduled' ? 'bg-green-100 text-green-800' :
-                    release.status === 'Draft' ? 'bg-yellow-100 text-yellow-800' :
+                    task.status === 'Done' ? 'bg-green-100 text-green-800' :
+                    task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                    task.status === 'Awaiting Review' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {release.status}
+                    {task.status}
                   </span>
                 </div>
               ))}
