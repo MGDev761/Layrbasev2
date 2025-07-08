@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Popover } from '@headlessui/react';
 import { 
   BellIcon, 
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  UserCircleIcon,
+  BuildingOfficeIcon,
+  Cog6ToothIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotifications } from '../../../contexts/NotificationContext';
@@ -16,7 +20,7 @@ const TopNav = ({
 }) => {
   const navigate = useNavigate();
   const [feedbackText, setFeedbackText] = useState('');
-  const { user, userProfile, signOut } = useAuth();
+  const { user, userProfile, signOut, currentOrganization } = useAuth();
   const { unreadCount } = useNotifications();
 
   const handleSubmit = (e) => {
@@ -27,6 +31,20 @@ const TopNav = ({
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const getUserInitials = () => {
+    if (userProfile && userProfile.first_name && userProfile.last_name) {
+      return `${userProfile.first_name.charAt(0)}${userProfile.last_name.charAt(0)}`.toUpperCase();
+    }
+    return user?.email?.charAt(0).toUpperCase() || 'U';
+  };
+
+  const getUserDisplayName = () => {
+    if (userProfile && userProfile.first_name && userProfile.last_name) {
+      return `${userProfile.first_name} ${userProfile.last_name}`;
+    }
+    return user?.email || 'User';
   };
 
   return (
@@ -98,54 +116,77 @@ const TopNav = ({
 
             {/* User Profile */}
             <Popover className="relative">
-              <Popover.Button className="p-1.5 rounded-full text-purple-800 hover:bg-pink-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 bg-pink-100 w-8 h-8 flex items-center justify-center text-xs font-medium">
-                {userProfile && userProfile.first_name && userProfile.last_name 
-                  ? `${userProfile.first_name.charAt(0)}${userProfile.last_name.charAt(0)}`.toUpperCase()
-                  : user?.email?.charAt(0).toUpperCase() || 'U'
-                }
+              <Popover.Button className="flex items-center p-1.5 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center">
+                  <span className="text-white text-xs font-semibold">{getUserInitials()}</span>
+                </div>
               </Popover.Button>
 
-              <Popover.Panel className="absolute right-0 z-10 mt-2 w-72 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                <div className="p-2">
-                  {/* Profile Circle */}
-                  <div className="flex justify-center py-4">
-                    <div className="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center text-purple-800 text-lg font-medium">
-                      {userProfile && userProfile.first_name && userProfile.last_name 
-                        ? `${userProfile.first_name.charAt(0)}${userProfile.last_name.charAt(0)}`.toUpperCase()
-                        : user?.email?.charAt(0).toUpperCase() || 'U'
-                      }
+              <Popover.Panel className="absolute right-0 z-10 mt-2 w-80 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200">
+                {/* Header Section */}
+                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-t-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                      <span className="text-white text-lg font-semibold">{getUserInitials()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold truncate">{getUserDisplayName()}</p>
+                      <p className="text-purple-100 text-sm truncate">{user?.email}</p>
                     </div>
                   </div>
+                </div>
 
-                  {/* User Info */}
-                  <div className="px-2 py-2 text-center">
-                    <p className="font-semibold text-gray-800">
-                      {userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : user?.email}
-                    </p>
-                    <p className="text-sm text-gray-500">{user?.email}</p>
+                {/* Current Organization */}
+                {currentOrganization && (
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                    <div className="flex items-center space-x-2">
+                      <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{currentOrganization.organization_name}</p>
+                        <p className="text-xs text-gray-500 capitalize">{currentOrganization.role}</p>
+                      </div>
+                    </div>
                   </div>
+                )}
+
+                {/* Menu Items */}
+                <div className="py-2">
+                  <button 
+                    onClick={() => navigate('/myorgs')}
+                    className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <BuildingOfficeIcon className="w-5 h-5 mr-3 text-gray-400" />
+                    <span>My Organizations</span>
+                  </button>
                   
-                  <div className="border-t border-gray-200 my-1"></div>
-                  
-                  <div className="space-y-1 py-1">
-                    <button className="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                      onClick={() => navigate('/myorgs')}
-                    >
-                      My Organizations
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => navigate('/profile')}
+                    className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <UserCircleIcon className="w-5 h-5 mr-3 text-gray-400" />
+                    <span>Account Settings</span>
+                  </button>
 
-                  <div className="border-t border-gray-200 my-1"></div>
+                  <button 
+                    onClick={() => navigate('/help')}
+                    className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <QuestionMarkCircleIcon className="w-5 h-5 mr-3 text-gray-400" />
+                    <span>Help & Support</span>
+                  </button>
+                </div>
 
-                  <div className="space-y-1 py-1">
-                    <button 
-                      onClick={handleSignOut}
-                      className="flex justify-between items-center w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                    >
-                      Sign Out
-                      <ArrowRightOnRectangleIcon className="h-4 w-4 text-gray-400" />
-                    </button>
-                  </div>
+                {/* Sign Out */}
+                <div className="border-t border-gray-200">
+                  <button 
+                    onClick={handleSignOut}
+                    className="flex items-center justify-between w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-b-lg"
+                  >
+                    <div className="flex items-center">
+                      <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3 text-gray-400" />
+                      <span>Sign Out</span>
+                    </div>
+                  </button>
                 </div>
               </Popover.Panel>
             </Popover>

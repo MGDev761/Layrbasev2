@@ -176,6 +176,7 @@ const Overview = () => {
   const [budgetData, setBudgetData] = useState([]);
   const [forecastData, setForecastData] = useState([]);
   const [loadingBudget, setLoadingBudget] = useState(false);
+  const [expandedSections, setExpandedSections] = useState(new Set()); // Collapsed by default
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
@@ -188,8 +189,8 @@ const Overview = () => {
       setLoadingBudget(true);
       try {
         const [budget, forecast] = await Promise.all([
-          budgetService.getBudgetData(currentOrganization.organization_id, selectedYear, false),
-          budgetService.getBudgetData(currentOrganization.organization_id, selectedYear, true)
+          budgetService.getBudgetData(currentOrganization.organization_id, selectedYear, 'budget'),
+          budgetService.getBudgetData(currentOrganization.organization_id, selectedYear, 'forecast')
         ]);
         
         setBudgetData(budget || []);
@@ -206,38 +207,52 @@ const Overview = () => {
     fetchBudgetData();
   }, [currentOrganization?.organization_id, selectedYear]);
 
-  // Group data by category
-  const groupDataByCategory = (data) => {
-    return data.reduce((acc, row) => {
-      const categoryName = row.category_name || 'Uncategorized';
-      if (!acc[categoryName]) {
-        acc[categoryName] = { type: row.type, subcategories: {} };
-      }
-      if (!acc[categoryName].subcategories[row.line_item_name]) {
-        acc[categoryName].subcategories[row.line_item_name] = [];
-      }
-      acc[categoryName].subcategories[row.line_item_name].push(row);
-      return acc;
-    }, {});
-  };
+  // Group budget data by category (like BudgetBuilder)
+  const groupedBudgetData = budgetData.reduce((acc, item) => {
+    const categoryName = (item.category_name || 'Uncategorized').trim().toLowerCase();
+    if (!acc[categoryName]) {
+      acc[categoryName] = {
+        type: item.type,
+        items: []
+      };
+    }
+    acc[categoryName].items.push(item);
+    return acc;
+  }, {});
 
-  const budgetGrouped = groupDataByCategory(budgetData);
-  const forecastGrouped = groupDataByCategory(forecastData);
+  // Group forecast data by category  
+  const groupedForecastData = forecastData.reduce((acc, item) => {
+    const categoryName = (item.category_name || 'Uncategorized').trim().toLowerCase();
+    if (!acc[categoryName]) {
+      acc[categoryName] = {
+        type: item.type,
+        items: []
+      };
+    }
+    acc[categoryName].items.push(item);
+    return acc;
+  }, {});
 
   // Calculate totals for selected month
-  const calculateMonthTotals = (data, monthIndex) => {
-    const revenue = data.filter(row => row.type === 'revenue').reduce((sum, row) => sum + (row[`month_${monthIndex + 1}`] || 0), 0);
-    const expenses = data.filter(row => row.type === 'expense').reduce((sum, row) => sum + Math.abs(row[`month_${monthIndex + 1}`] || 0), 0);
+  const calculateBudgetTotals = (data, monthIndex) => {
+    const revenue = data.filter(row => row.type === 'revenue').reduce((sum, row) => sum + (row[`budget_month_${monthIndex + 1}`] || 0), 0);
+    const expenses = data.filter(row => row.type === 'expense').reduce((sum, row) => sum + Math.abs(row[`budget_month_${monthIndex + 1}`] || 0), 0);
     return { revenue, expenses, profit: revenue - expenses };
   };
 
-  const budgetTotals = calculateMonthTotals(budgetData, selectedMonth);
-  const forecastTotals = calculateMonthTotals(forecastData, selectedMonth);
-  const previousMonthForecastTotals = calculateMonthTotals(forecastData, Math.max(0, selectedMonth - 1));
+  const calculateForecastTotals = (data, monthIndex) => {
+    const revenue = data.filter(row => row.type === 'revenue').reduce((sum, row) => sum + (row[`forecast_month_${monthIndex + 1}`] || 0), 0);
+    const expenses = data.filter(row => row.type === 'expense').reduce((sum, row) => sum + Math.abs(row[`forecast_month_${monthIndex + 1}`] || 0), 0);
+    return { revenue, expenses, profit: revenue - expenses };
+  };
+
+  const budgetTotals = calculateBudgetTotals(budgetData, selectedMonth);
+  const forecastTotals = calculateForecastTotals(forecastData, selectedMonth);
+  const previousMonthForecastTotals = calculateForecastTotals(forecastData, Math.max(0, selectedMonth - 1));
 
   // Calculate burn rate (monthly cash burn)
   const monthlyBurnRate = Math.abs(budgetTotals.expenses);
-  const runwayMonths = 500000 / monthlyBurnRate; // Assuming $500k cash balance
+  const runwayMonths = monthlyBurnRate > 0 ? 500000 / monthlyBurnRate : 0; // Assuming $500k cash balance
 
   // Calculate cash flow
   const cashInflow = budgetTotals.revenue;
@@ -248,18 +263,30 @@ const Overview = () => {
   const generateCashFlowData = () => {
     const data = [];
     for (let i = 0; i < 12; i++) {
-      const monthData = calculateMonthTotals(budgetData, i);
+      const revenue = budgetData.filter(row => row.type === 'revenue').reduce((sum, row) => sum + (row[`budget_month_${i + 1}`] || 0), 0);
+      const expenses = budgetData.filter(row => row.type === 'expense').reduce((sum, row) => sum + Math.abs(row[`budget_month_${i + 1}`] || 0), 0);
       data.push({
         label: months[i],
-        inflow: monthData.revenue,
-        outflow: monthData.expenses,
-        net: monthData.revenue - monthData.expenses
+        inflow: revenue,
+        outflow: expenses,
+        net: revenue - expenses
       });
     }
     return data;
   };
 
   const cashFlowData = generateCashFlowData();
+
+  // Toggle section expansion
+  const toggleSection = (sectionName) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(sectionName)) {
+      newExpanded.delete(sectionName);
+    } else {
+      newExpanded.add(sectionName);
+    }
+    setExpandedSections(newExpanded);
+  };
 
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -293,122 +320,286 @@ const Overview = () => {
         <p className="text-gray-600 text-base">Month-on-month summary of budget, forecast, invoicing, and management accounts.</p>
       </div>
 
-      {/* Month Selector */}
-      <div className="flex gap-4 items-center mb-6">
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(Number(e.target.value))}
-          className="px-4 py-2 rounded-md border border-gray-300 focus:ring-purple-500 focus:border-purple-500 text-sm w-32"
-        >
-          {months.map((month, index) => (
-            <option key={index} value={index}>{month}</option>
-          ))}
-        </select>
-        <select
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(Number(e.target.value))}
-          className="px-4 py-2 rounded-md border border-gray-300 focus:ring-purple-500 focus:border-purple-500 text-sm"
-        >
-          {years.map(year => (
-            <option key={year} value={year}>{year}</option>
-          ))}
-        </select>
-      </div>
+
 
       {/* Budget vs Forecast Comparison */}
-      <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Budget vs Forecast - {months[selectedMonth]} {selectedYear}</h3>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            Budget vs Forecast - 
+            <div className="relative">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="bg-purple-50 text-lg font-bold text-gray-900 cursor-pointer focus:outline-none focus:ring-0 pr-8 pl-3 py-1 rounded-md appearance-none"
+                style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+              >
+                {months.map((month, index) => (
+                  <option key={index} value={index}>{month}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            <div className="relative">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="bg-purple-50 text-lg font-bold text-gray-900 cursor-pointer focus:outline-none focus:ring-0 pr-8 pl-3 py-1 rounded-md appearance-none"
+                style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+              >
+                {years.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </h3>
+        </div>
         {loadingBudget ? (
           <div className="text-center py-8 text-gray-400">Loading budget data...</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm border border-gray-200 rounded-lg">
+          <div className="overview-table-container" style={{ borderTop: '1px solid #e5e7eb' }}>
+            <style>{`
+              .overview-table-container {
+                --ag-background-color: #ffffff !important;
+                --ag-odd-row-background-color: #ffffff !important;
+                --ag-header-background-color: #f9fafb !important;
+                --ag-row-hover-color: #f9fafb !important;
+                --ag-border-color: #f3f4f6 !important;
+                --ag-secondary-border-color: #f9fafb !important;
+                --ag-header-cell-hover-background-color: #f3f4f6 !important;
+                --ag-selected-row-background-color: transparent !important;
+                --ag-range-selection-background-color: transparent !important;
+                --ag-cell-horizontal-border: 1px solid #f3f4f6 !important;
+                --ag-row-border-color: #f3f4f6 !important;
+                --ag-header-height: 48px !important;
+                --ag-row-height: 48px !important;
+                --ag-cell-horizontal-padding: 0px !important;
+                --ag-cell-vertical-padding: 0px !important;
+                --ag-header-cell-font-size: 12px !important;
+                --ag-font-size: 13px !important;
+                --ag-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+              }
+
+              .overview-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+              }
+
+              .overview-table thead tr {
+                background-color: #f9fafb;
+                height: 48px;
+              }
+
+              .overview-table th {
+                padding: 16px 12px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+                border-right: 1px solid #e5e7eb;
+                text-align: left;
+              }
+
+              .overview-table th.text-right {
+                text-align: right;
+              }
+
+              .overview-table tbody tr {
+                height: 48px;
+                border-bottom: 1px solid #f3f4f6;
+              }
+
+              .overview-table tbody tr:hover {
+                background-color: #f9fafb;
+              }
+
+              .overview-table td {
+                padding: 10px 12px;
+                font-size: 13px;
+                color: #374151;
+                border-right: 1px solid #f3f4f6;
+                text-align: left;
+              }
+
+              .overview-table td.text-right {
+                text-align: right;
+              }
+
+                             /* Revenue section styling */
+               .overview-table .revenue-header {
+                 background-color: #f0fdf4;
+                 color: #15803d;
+                 font-weight: 600;
+                 cursor: pointer;
+               }
+
+               .overview-table .revenue-header:hover {
+                 background-color: #dcfce7;
+               }
+
+              .overview-table .revenue-category {
+                background-color: #f9fefb;
+                color: #15803d;
+                font-weight: 500;
+              }
+
+              .overview-table .revenue-category td:first-child {
+                padding-left: 48px;
+                border-left: 3px solid #e5e7eb;
+              }
+
+                             /* Expense section styling */
+               .overview-table .expense-header {
+                 background-color: #fef2f2;
+                 color: #7f1d1d;
+                 font-weight: 600;
+                 cursor: pointer;
+               }
+
+               .overview-table .expense-header:hover {
+                 background-color: #fee2e2;
+               }
+
+              .overview-table .expense-category {
+                background-color: #fffbfb;
+                color: #7f1d1d;
+                font-weight: 500;
+              }
+
+              .overview-table .expense-category td:first-child {
+                padding-left: 48px;
+                border-left: 3px solid #e5e7eb;
+              }
+
+              /* Summary section styling */
+              .overview-table .summary-header {
+                background-color: #f9fafb;
+                font-weight: 600;
+                color: #374151;
+                font-size: 14px;
+              }
+
+              .overview-table .summary-header td {
+                padding: 16px 12px;
+                border-right: 1px solid #e5e7eb;
+              }
+            `}</style>
+            <table className="overview-table">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-3 py-2 text-left font-medium text-gray-500 w-40">Line</th>
-                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Budget</th>
-                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Forecast</th>
-                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">Variance</th>
-                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l-4 border-gray-300">Last Month</th>
-                  <th className="px-3 py-2 text-center font-medium text-gray-500 border-l">MoM Change</th>
+                <tr>
+                  <th style={{ width: '200px' }}>Line</th>
+                  <th className="text-right">Budget</th>
+                  <th className="text-right">Forecast</th>
+                  <th className="text-right">Variance</th>
+                  <th className="text-right" style={{ borderLeft: '4px solid #d1d5db' }}>Last Month</th>
+                  <th className="text-right">MoM Change</th>
                 </tr>
               </thead>
               <tbody>
                 {/* Revenue */}
-                <tr className="bg-green-100">
-                  <td className="px-3 py-2 font-bold text-green-800">Revenue</td>
-                  <td className="px-2 py-1 text-center text-green-800 font-semibold border-l">{budgetTotals.revenue.toLocaleString()}</td>
-                  <td className="px-2 py-1 text-center text-green-800 font-semibold border-l">{forecastTotals.revenue.toLocaleString()}</td>
-                  <td className={`px-2 py-1 text-center font-semibold border-l ${forecastTotals.revenue >= budgetTotals.revenue ? 'text-green-600' : 'text-red-600'}`}>
-                    {budgetTotals.revenue > 0 ? ((forecastTotals.revenue - budgetTotals.revenue) / budgetTotals.revenue * 100).toFixed(1) : 0}%
+                <tr className="revenue-header" onClick={() => toggleSection('revenue')}>
+                  <td style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ cursor: 'pointer', userSelect: 'none', color: '#6b7280', fontSize: '12px' }}>
+                      {expandedSections.has('revenue') ? '▼' : '▶'}
+                    </span>
+                    REVENUE
                   </td>
-                  <td className="px-2 py-1 text-center text-green-800 font-semibold border-l-4 border-gray-300">{previousMonthForecastTotals.revenue.toLocaleString()}</td>
-                  <td className={`px-2 py-1 text-center font-semibold border-l ${forecastTotals.revenue >= previousMonthForecastTotals.revenue ? 'text-green-600' : 'text-red-600'}`}>
-                    {previousMonthForecastTotals.revenue > 0 ? ((forecastTotals.revenue - previousMonthForecastTotals.revenue) / previousMonthForecastTotals.revenue * 100).toFixed(1) : 0}%
+                  <td className="text-right">{Math.round(budgetTotals.revenue).toLocaleString()}</td>
+                  <td className="text-right">{Math.round(forecastTotals.revenue).toLocaleString()}</td>
+                  <td className={`text-right ${forecastTotals.revenue >= budgetTotals.revenue ? 'text-green-600' : 'text-red-600'}`} style={{ fontWeight: '500' }}>
+                    {budgetTotals.revenue > 0 ? ((forecastTotals.revenue - budgetTotals.revenue) / budgetTotals.revenue * 100).toFixed(0) : 0}%
+                  </td>
+                  <td className="text-right" style={{ borderLeft: '4px solid #d1d5db' }}>{Math.round(previousMonthForecastTotals.revenue).toLocaleString()}</td>
+                  <td className={`text-right ${forecastTotals.revenue >= previousMonthForecastTotals.revenue ? 'text-green-600' : 'text-red-600'}`} style={{ fontWeight: '500' }}>
+                    {previousMonthForecastTotals.revenue > 0 ? ((forecastTotals.revenue - previousMonthForecastTotals.revenue) / previousMonthForecastTotals.revenue * 100).toFixed(0) : 0}%
                   </td>
                 </tr>
-                {Object.entries(budgetGrouped).filter(([category, data]) => data.type === 'revenue').map(([category, data]) => {
-                  const budgetAmount = Object.values(data.subcategories).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0);
-                  const forecastAmount = Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0);
-                  const previousForecastAmount = Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth}`] || 0), 0);
+                {expandedSections.has('revenue') && Object.entries(groupedBudgetData).filter(([category, data]) => data.type === 'revenue').map(([category, data]) => {
+                  const budgetAmount = data.items.reduce((sum, row) => sum + (row[`budget_month_${selectedMonth + 1}`] || 0), 0);
+                  const forecastAmount = (groupedForecastData[category]?.items || []).reduce((sum, row) => sum + (row[`forecast_month_${selectedMonth + 1}`] || 0), 0);
+                  const previousForecastAmount = (groupedForecastData[category]?.items || []).reduce((sum, row) => sum + (row[`forecast_month_${selectedMonth}`] || 0), 0);
+                  
+                  // Display the category name with proper capitalization
+                  const displayName = Object.keys(groupedBudgetData).find(key => key.toLowerCase() === category.toLowerCase()) || category;
+                  const properDisplayName = data.items[0]?.category_name || displayName;
+                  
                   return (
-                    <tr key={category} className="bg-green-50">
-                      <td className="px-3 py-2 font-medium text-green-900 pl-8">{category}</td>
-                      <td className="px-2 py-1 text-center text-green-900 border-l">{budgetAmount.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-center text-green-900 border-l">{forecastAmount.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-center text-gray-600 border-l">
-                        {budgetAmount > 0 ? ((forecastAmount - budgetAmount) / budgetAmount * 100).toFixed(1) : 0}%
+                    <tr key={category} className="revenue-category">
+                      <td>{properDisplayName}</td>
+                      <td className="text-right">{Math.round(budgetAmount).toLocaleString()}</td>
+                      <td className="text-right">{Math.round(forecastAmount).toLocaleString()}</td>
+                      <td className="text-right text-gray-600">
+                        {budgetAmount > 0 ? ((forecastAmount - budgetAmount) / budgetAmount * 100).toFixed(0) : 0}%
                       </td>
-                      <td className="px-2 py-1 text-center text-green-900 border-l-4 border-gray-300">{previousForecastAmount.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-center text-gray-600 border-l">
-                        {previousForecastAmount > 0 ? ((forecastAmount - previousForecastAmount) / previousForecastAmount * 100).toFixed(1) : 0}%
+                      <td className="text-right" style={{ borderLeft: '4px solid #d1d5db' }}>{Math.round(previousForecastAmount).toLocaleString()}</td>
+                      <td className="text-right text-gray-600">
+                        {previousForecastAmount > 0 ? ((forecastAmount - previousForecastAmount) / previousForecastAmount * 100).toFixed(0) : 0}%
                       </td>
                     </tr>
                   );
                 })}
                 {/* Expenses */}
-                <tr className="bg-red-100">
-                  <td className="px-3 py-2 font-bold text-red-800">Expenses</td>
-                  <td className="px-2 py-1 text-center text-red-800 font-semibold border-l">{Math.abs(budgetTotals.expenses).toLocaleString()}</td>
-                  <td className="px-2 py-1 text-center text-red-800 font-semibold border-l">{Math.abs(forecastTotals.expenses).toLocaleString()}</td>
-                  <td className={`px-2 py-1 text-center font-semibold border-l ${Math.abs(forecastTotals.expenses) <= Math.abs(budgetTotals.expenses) ? 'text-green-600' : 'text-red-600'}`}>
-                    {budgetTotals.expenses > 0 ? ((Math.abs(forecastTotals.expenses) - Math.abs(budgetTotals.expenses)) / Math.abs(budgetTotals.expenses) * 100).toFixed(1) : 0}%
+                <tr className="expense-header" onClick={() => toggleSection('expenses')}>
+                  <td style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ cursor: 'pointer', userSelect: 'none', color: '#6b7280', fontSize: '12px' }}>
+                      {expandedSections.has('expenses') ? '▼' : '▶'}
+                    </span>
+                    EXPENSES
                   </td>
-                  <td className="px-2 py-1 text-center text-red-800 font-semibold border-l-4 border-gray-300">{Math.abs(previousMonthForecastTotals.expenses).toLocaleString()}</td>
-                  <td className={`px-2 py-1 text-center font-semibold border-l ${Math.abs(forecastTotals.expenses) <= Math.abs(previousMonthForecastTotals.expenses) ? 'text-green-600' : 'text-red-600'}`}>
-                    {previousMonthForecastTotals.expenses > 0 ? ((Math.abs(forecastTotals.expenses) - Math.abs(previousMonthForecastTotals.expenses)) / Math.abs(previousMonthForecastTotals.expenses) * 100).toFixed(1) : 0}%
+                  <td className="text-right">{Math.round(Math.abs(budgetTotals.expenses)).toLocaleString()}</td>
+                  <td className="text-right">{Math.round(Math.abs(forecastTotals.expenses)).toLocaleString()}</td>
+                  <td className={`text-right ${Math.abs(forecastTotals.expenses) <= Math.abs(budgetTotals.expenses) ? 'text-green-600' : 'text-red-600'}`} style={{ fontWeight: '500' }}>
+                    {budgetTotals.expenses > 0 ? ((Math.abs(forecastTotals.expenses) - Math.abs(budgetTotals.expenses)) / Math.abs(budgetTotals.expenses) * 100).toFixed(0) : 0}%
+                  </td>
+                  <td className="text-right" style={{ borderLeft: '4px solid #d1d5db' }}>{Math.round(Math.abs(previousMonthForecastTotals.expenses)).toLocaleString()}</td>
+                  <td className={`text-right ${Math.abs(forecastTotals.expenses) <= Math.abs(previousMonthForecastTotals.expenses) ? 'text-green-600' : 'text-red-600'}`} style={{ fontWeight: '500' }}>
+                    {previousMonthForecastTotals.expenses > 0 ? ((Math.abs(forecastTotals.expenses) - Math.abs(previousMonthForecastTotals.expenses)) / Math.abs(previousMonthForecastTotals.expenses) * 100).toFixed(0) : 0}%
                   </td>
                 </tr>
-                {Object.entries(budgetGrouped).filter(([category, data]) => data.type === 'expense').map(([category, data]) => {
-                  const budgetAmount = Math.abs(Object.values(data.subcategories).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0));
-                  const forecastAmount = Math.abs(Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth + 1}`] || 0), 0));
-                  const previousForecastAmount = Math.abs(Object.values(forecastGrouped[category]?.subcategories || {}).flat().reduce((sum, row) => sum + (row[`month_${selectedMonth}`] || 0), 0));
+                {expandedSections.has('expenses') && Object.entries(groupedBudgetData).filter(([category, data]) => data.type === 'expense').map(([category, data]) => {
+                  const budgetAmount = Math.abs(data.items.reduce((sum, row) => sum + (row[`budget_month_${selectedMonth + 1}`] || 0), 0));
+                  const forecastAmount = Math.abs((groupedForecastData[category]?.items || []).reduce((sum, row) => sum + (row[`forecast_month_${selectedMonth + 1}`] || 0), 0));
+                  const previousForecastAmount = Math.abs((groupedForecastData[category]?.items || []).reduce((sum, row) => sum + (row[`forecast_month_${selectedMonth}`] || 0), 0));
+                  
+                  // Display the category name with proper capitalization
+                  const displayName = Object.keys(groupedBudgetData).find(key => key.toLowerCase() === category.toLowerCase()) || category;
+                  const properDisplayName = data.items[0]?.category_name || displayName;
+                  
                   return (
-                    <tr key={category} className="bg-red-50">
-                      <td className="px-3 py-2 font-medium text-red-900 pl-8">{category}</td>
-                      <td className="px-2 py-1 text-center text-red-900 border-l">{budgetAmount.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-center text-red-900 border-l">{forecastAmount.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-center text-gray-600 border-l">
-                        {budgetAmount > 0 ? ((forecastAmount - budgetAmount) / budgetAmount * 100).toFixed(1) : 0}%
+                    <tr key={category} className="expense-category">
+                      <td>{properDisplayName}</td>
+                      <td className="text-right">{Math.round(budgetAmount).toLocaleString()}</td>
+                      <td className="text-right">{Math.round(forecastAmount).toLocaleString()}</td>
+                      <td className="text-right text-gray-600">
+                        {budgetAmount > 0 ? ((forecastAmount - budgetAmount) / budgetAmount * 100).toFixed(0) : 0}%
                       </td>
-                      <td className="px-2 py-1 text-center text-red-900 border-l-4 border-gray-300">{previousForecastAmount.toLocaleString()}</td>
-                      <td className="px-2 py-1 text-center text-gray-600 border-l">
-                        {previousForecastAmount > 0 ? ((forecastAmount - previousForecastAmount) / previousForecastAmount * 100).toFixed(1) : 0}%
+                      <td className="text-right" style={{ borderLeft: '4px solid #d1d5db' }}>{Math.round(previousForecastAmount).toLocaleString()}</td>
+                      <td className="text-right text-gray-600">
+                        {previousForecastAmount > 0 ? ((forecastAmount - previousForecastAmount) / previousForecastAmount * 100).toFixed(0) : 0}%
                       </td>
                     </tr>
                   );
                 })}
                 {/* Profit/Loss */}
-                <tr className="bg-blue-100 font-bold">
-                  <td className="px-3 py-2 text-blue-900">Profit / Loss</td>
-                  <td className="px-2 py-1 text-center text-blue-900 border-l">{budgetTotals.profit.toLocaleString()}</td>
-                  <td className="px-2 py-1 text-center text-blue-900 border-l">{forecastTotals.profit.toLocaleString()}</td>
-                  <td className={`px-2 py-1 text-center border-l ${forecastTotals.profit >= budgetTotals.profit ? 'text-green-600' : 'text-red-600'}`}>
-                    {Math.abs(budgetTotals.profit) > 0 ? ((forecastTotals.profit - budgetTotals.profit) / Math.abs(budgetTotals.profit) * 100).toFixed(1) : 0}%
+                <tr className="summary-header">
+                  <td>Profit / Loss</td>
+                  <td className="text-right">{Math.round(budgetTotals.profit).toLocaleString()}</td>
+                  <td className="text-right">{Math.round(forecastTotals.profit).toLocaleString()}</td>
+                  <td className={`text-right ${forecastTotals.profit >= budgetTotals.profit ? 'text-green-600' : 'text-red-600'}`} style={{ fontWeight: '500' }}>
+                    {Math.abs(budgetTotals.profit) > 0 ? ((forecastTotals.profit - budgetTotals.profit) / Math.abs(budgetTotals.profit) * 100).toFixed(0) : 0}%
                   </td>
-                  <td className="px-2 py-1 text-center text-blue-900 border-l-4 border-gray-300">{previousMonthForecastTotals.profit.toLocaleString()}</td>
-                  <td className={`px-2 py-1 text-center border-l ${forecastTotals.profit >= previousMonthForecastTotals.profit ? 'text-green-600' : 'text-red-600'}`}>
-                    {Math.abs(previousMonthForecastTotals.profit) > 0 ? ((forecastTotals.profit - previousMonthForecastTotals.profit) / Math.abs(previousMonthForecastTotals.profit) * 100).toFixed(1) : 0}%
+                  <td className="text-right" style={{ borderLeft: '4px solid #d1d5db' }}>{Math.round(previousMonthForecastTotals.profit).toLocaleString()}</td>
+                  <td className={`text-right ${forecastTotals.profit >= previousMonthForecastTotals.profit ? 'text-green-600' : 'text-red-600'}`} style={{ fontWeight: '500' }}>
+                    {Math.abs(previousMonthForecastTotals.profit) > 0 ? ((forecastTotals.profit - previousMonthForecastTotals.profit) / Math.abs(previousMonthForecastTotals.profit) * 100).toFixed(0) : 0}%
                   </td>
                 </tr>
               </tbody>

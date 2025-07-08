@@ -1,223 +1,747 @@
-import React, { useState } from 'react';
-import { InformationCircleIcon, BookOpenIcon, CogIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { 
+  CheckCircleIcon, 
+  XCircleIcon, 
+  ClockIcon, 
+  ExclamationTriangleIcon,
+  PlusIcon,
+  DocumentTextIcon,
+  CalendarIcon,
+  UserGroupIcon,
+  ShieldCheckIcon,
+  BuildingOfficeIcon,
+  GlobeAltIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
+  QuestionMarkCircleIcon
+} from '@heroicons/react/24/outline';
 
-const LAWS = [
-  {
-    id: 'gdpr',
-    law: 'GDPR',
-    region: 'EU',
-    appliesTo: 'All users processing EU citizen data',
-    effectiveDate: 'May 2018',
-    summary: 'Protects personal data rights',
-    type: 'Data Privacy',
-    industry: 'All',
-    status: 'Active',
-  },
-  {
-    id: 'ccpa',
-    law: 'CCPA',
-    region: 'California, US',
-    appliesTo: 'Businesses with >$25M revenue or >50k users',
-    effectiveDate: 'Jan 2020',
-    summary: 'Consumer data rights in California',
-    type: 'Data Privacy',
-    industry: 'All',
-    status: 'Active',
-  },
-  {
-    id: 'dsa',
-    law: 'DSA',
-    region: 'EU',
-    appliesTo: 'Platforms hosting user-generated content',
-    effectiveDate: 'Feb 2024',
-    summary: 'Digital safety and transparency',
-    type: 'Digital Services',
-    industry: 'Tech/Media',
-    status: 'Active',
-  },
-  {
-    id: 'hipaa',
-    law: 'HIPAA',
-    region: 'US',
-    appliesTo: 'Healthcare providers processing patient data',
-    effectiveDate: 'Apr 2003',
-    summary: 'Protects health information privacy',
-    type: 'Healthcare',
-    industry: 'Healthcare',
-    status: 'Active',
-  },
-  {
-    id: 'lgpd',
-    law: 'LGPD',
-    region: 'Brazil',
-    appliesTo: 'Any business processing Brazilian citizen data',
-    effectiveDate: 'Aug 2020',
-    summary: 'Brazilian data protection law',
-    type: 'Data Privacy',
-    industry: 'All',
-    status: 'Active',
-  },
-];
+const RequirementModal = ({ isOpen, onClose, requirement, onSave }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: 'compliance',
+    priority: 'medium',
+    dueDate: '',
+    assignedTo: '',
+    status: 'not_started',
+    notes: ''
+  });
 
-const REGIONS = [...new Set(LAWS.map(l => l.region))];
-const TYPES = [...new Set(LAWS.map(l => l.type))];
-const INDUSTRIES = [...new Set(LAWS.map(l => l.industry))];
-const STATUSES = [...new Set(LAWS.map(l => l.status))];
+  useEffect(() => {
+    if (requirement) {
+      setFormData({
+        title: requirement.title || '',
+        description: requirement.description || '',
+        category: requirement.category || 'compliance',
+        priority: requirement.priority || 'medium',
+        dueDate: requirement.dueDate || '',
+        assignedTo: requirement.assignedTo || '',
+        status: requirement.status || 'not_started',
+        notes: requirement.notes || ''
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        category: 'compliance',
+        priority: 'medium',
+        dueDate: '',
+        assignedTo: '',
+        status: 'not_started',
+        notes: ''
+      });
+    }
+  }, [requirement]);
 
-const SideInfoModal = ({ isOpen, onClose }) => {
-  const [tab, setTab] = useState('basics');
-  const [openSections, setOpenSections] = useState({
-    basics: true,
-    platform: false,
-    ai: false
-  });
-  const toggleSection = (key) => setOpenSections(s => ({ ...s, [key]: !s[key] }));
-  const [openContent, setOpenContent] = useState({
-    intro: true,
-    why: false,
-    best: false
-  });
-  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
-  const [openPlatform, setOpenPlatform] = useState({
-    quick: true,
-    tips: false,
-    faq: false
-  });
-  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
   
   if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
-      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-4 py-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white tracking-tight">Legal Help & Tips</h2>
-            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+            <h2 className="text-lg font-semibold text-white">
+              {requirement ? 'Edit Requirement' : 'Add Legal Requirement'}
+            </h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-xl">&times;</button>
           </div>
         </div>
-        <div className="flex border-b border-gray-200 w-full">
-          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <BookOpenIcon className="w-5 h-5" /> Legal Basics
-          </button>
-          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <CogIcon className="w-5 h-5" /> Platform How-To
-          </button>
-          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <ChatBubbleLeftRightIcon className="w-5 h-5" /> AI
-          </button>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              placeholder="e.g., GDPR Compliance Review"
+              required
+            />
         </div>
-        <div className="flex-1 overflow-y-auto p-6 space-y-2">
-          {tab === 'basics' && (
-            <>
-              {/* Introduction Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Introduction</span>
-                  {openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.intro && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Legal compliance is essential for any business. This section helps you understand key legal requirements and best practices for maintaining compliance.</p>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              placeholder="Describe what needs to be done..."
+            />
                   </div>
-                )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              >
+                <option value="compliance">Compliance</option>
+                <option value="data_protection">Data Protection</option>
+                <option value="employment">Employment Law</option>
+                <option value="corporate">Corporate Governance</option>
+                <option value="intellectual_property">Intellectual Property</option>
+                <option value="contracts">Contracts</option>
+                <option value="insurance">Insurance</option>
+                <option value="tax">Tax & Accounting</option>
+              </select>
               </div>
-              {/* Why It's Important Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('why')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Why It's Important</span>
-                  {openContent.why ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.why && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Prevents legal penalties and fines</li>
-                      <li>Protects your business reputation</li>
-                      <li>Ensures customer trust and confidence</li>
-                      <li>Reduces risk of litigation</li>
-                    </ul>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <select
+                value={formData.priority}
+                onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
                   </div>
-                )}
               </div>
-              {/* Best Practice Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('best')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Best Practice</span>
-                  {openContent.best ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.best && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Stay up to date with relevant laws and regulations</li>
-                      <li>Document compliance and legal actions</li>
-                      <li>Consult legal counsel for complex issues</li>
-                      <li>Use the platform to track and monitor legal requirements</li>
-                    </ul>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+              <input
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              />
                   </div>
-                )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({...formData, status: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              >
+                <option value="not_started">Not Started</option>
+                <option value="in_progress">In Progress</option>
+                <option value="review">Under Review</option>
+                <option value="completed">Completed</option>
+                <option value="overdue">Overdue</option>
+              </select>
               </div>
-            </>
-          )}
-          {tab === 'platform' && (
-            <>
-              {/* Quick Start Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('quick')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Browse and Filter Laws</span>
-                  {openPlatform.quick ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.quick && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Use the search and filter options to find relevant laws by region, type, and industry. The directory provides comprehensive information about each regulation.</p>
                   </div>
-                )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+            <input
+              type="text"
+              value={formData.assignedTo}
+              onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              placeholder="e.g., Legal Team, HR Manager"
+            />
               </div>
-              {/* Tips Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('tips')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Eligibility Checker</span>
-                  {openPlatform.tips ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              placeholder="Additional notes, links to documents, etc..."
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-3 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors text-sm"
+            >
+              Cancel
                 </button>
-                {openPlatform.tips && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Check which laws apply to your business based on your size, industry, and geographic location. This helps you focus on relevant compliance requirements.</p>
+            <button
+              type="submit"
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
+            >
+              {requirement ? 'Update' : 'Add'} Requirement
+            </button>
                   </div>
-                )}
+        </form>
               </div>
-              {/* FAQ Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('faq')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Stay Updated</span>
-                  {openPlatform.faq ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.faq && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Subscribe to updates for relevant laws to stay informed about changes that may affect your business compliance requirements.</p>
                   </div>
-                )}
+  );
+};
+
+const ComplianceChecklist = ({ onAddRequirement }) => {
+  const commonRequirements = [
+    {
+      category: 'Data Protection',
+      icon: ShieldCheckIcon,
+      color: 'bg-blue-500',
+      items: [
+        { title: 'GDPR Privacy Policy', description: 'Create and publish GDPR-compliant privacy policy' },
+        { title: 'Data Processing Audit', description: 'Review all data processing activities' },
+        { title: 'Cookie Consent Setup', description: 'Implement cookie consent management' },
+        { title: 'Data Subject Rights Process', description: 'Establish process for data requests' }
+      ]
+    },
+    {
+      category: 'Employment Law',
+      icon: UserGroupIcon,
+      color: 'bg-green-500',
+      items: [
+        { title: 'Employee Handbook', description: 'Create comprehensive employee handbook' },
+        { title: 'Workplace Policies', description: 'Draft anti-discrimination and harassment policies' },
+        { title: 'Employment Contracts', description: 'Review and update employment agreements' },
+        { title: 'Pension Auto-Enrollment', description: 'Set up workplace pension scheme' }
+      ]
+    },
+    {
+      category: 'Corporate Governance',
+      icon: BuildingOfficeIcon,
+      color: 'bg-purple-500',
+      items: [
+        { title: 'Articles of Association', description: 'File constitutional documents' },
+        { title: 'Director Duties Training', description: 'Ensure directors understand their duties' },
+        { title: 'Board Meeting Minutes', description: 'Establish proper meeting documentation' },
+        { title: 'Share Register Maintenance', description: 'Keep accurate shareholder records' }
+      ]
+    },
+    {
+      category: 'Compliance Filings',
+      icon: DocumentTextIcon,
+      color: 'bg-orange-500',
+      items: [
+        { title: 'Annual Confirmation Statement', description: 'File yearly company information with Companies House' },
+        { title: 'Annual Accounts', description: 'Prepare and file annual financial statements' },
+        { title: 'VAT Registration', description: 'Register for VAT if revenue exceeds threshold' },
+        { title: 'PAYE Setup', description: 'Register for payroll taxes when hiring employees' }
+      ]
+    }
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium text-gray-900">Compliance Checklist</h3>
+        <p className="text-sm text-gray-600">Click items to add to your requirements</p>
               </div>
-            </>
-          )}
-          {tab === 'ai' && (
-            <div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}>
-              {/* Chat messages */}
-              <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your legal compliance assistant. I can help you understand regulations, check compliance requirements, and answer questions about using this platform.</div>
+
+      {commonRequirements.map((category, idx) => (
+        <div key={idx} className="bg-white border border-gray-200 rounded-lg">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className={`w-6 h-6 ${category.color} rounded flex items-center justify-center`}>
+                <category.icon className="w-4 h-4 text-white" />
                 </div>
-                <div className="flex justify-end">
-                  <div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">What are the key GDPR requirements for a small business?</div>
+              <h4 className="text-base font-medium text-gray-900">{category.category}</h4>
                 </div>
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">For small businesses, key GDPR requirements include: obtaining clear consent for data collection, implementing data protection measures, providing data subject rights, and maintaining records of processing activities.</div>
                 </div>
+          <div className="p-4">
+            <div className="grid gap-2">
+              {category.items.map((item, itemIdx) => (
+                <div
+                  key={itemIdx}
+                  onClick={() => onAddRequirement({
+                    title: item.title,
+                    description: item.description,
+                    category: category.category.toLowerCase().replace(' ', '_'),
+                    priority: 'medium'
+                  })}
+                  className="flex items-start space-x-3 p-2 border border-gray-200 rounded hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-colors group"
+                >
+                  <PlusIcon className="w-4 h-4 text-gray-400 group-hover:text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h5 className="text-sm font-medium text-gray-900 group-hover:text-purple-900">{item.title}</h5>
+                    <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
               </div>
-              {/* Input box */}
-              <form className="flex items-center gap-2">
-                <input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about legal compliance..." disabled />
-                <button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button>
-              </form>
             </div>
+              ))}
+        </div>
+      </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const RequirementsWizard = ({ isOpen, onClose, onAddRequirements }) => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    companySize: '',
+    industry: '',
+    location: '',
+    hasEmployees: '',
+    processesData: '',
+    dataTypes: [],
+    revenue: '',
+    hasWebsite: '',
+    hasOnlinePayments: '',
+    businessType: ''
+  });
+
+  const steps = [
+    { id: 1, title: 'Company Basics', description: 'Tell us about your company' },
+    { id: 2, title: 'Business Operations', description: 'How does your business operate?' },
+    { id: 3, title: 'Data & Privacy', description: 'What data do you handle?' },
+    { id: 4, title: 'Results', description: 'Your legal requirements' }
+  ];
+
+  const generateRequirements = () => {
+    const requirements = [];
+
+    // Corporate governance (all companies)
+    requirements.push({
+      title: 'Annual Confirmation Statement',
+      description: 'File annual confirmation statement with Companies House',
+      category: 'compliance',
+      priority: 'critical',
+      reason: 'Required for all UK companies'
+    });
+
+    // Employee-related requirements
+    if (formData.hasEmployees === 'yes') {
+      requirements.push({
+        title: 'Employee Handbook',
+        description: 'Create comprehensive employee handbook with policies',
+        category: 'employment',
+        priority: 'high',
+        reason: 'Required when you have employees'
+      });
+
+      requirements.push({
+        title: 'PAYE Registration',
+        description: 'Register for payroll taxes with HMRC',
+        category: 'tax',
+        priority: 'critical',
+        reason: 'Mandatory for employers'
+      });
+
+      requirements.push({
+        title: 'Workplace Pension Setup',
+        description: 'Set up auto-enrollment pension scheme',
+        category: 'employment',
+        priority: 'high',
+        reason: 'Required for all employers'
+      });
+    }
+
+    // Revenue-based requirements
+    if (formData.revenue && parseInt(formData.revenue) >= 85000) {
+      requirements.push({
+        title: 'VAT Registration',
+        description: 'Register for VAT with HMRC',
+        category: 'tax',
+        priority: 'critical',
+        reason: 'Required when revenue exceeds £85,000'
+      });
+    }
+
+    // Data protection requirements
+    if (formData.processesData === 'yes') {
+      requirements.push({
+        title: 'GDPR Privacy Policy',
+        description: 'Create and publish GDPR-compliant privacy policy',
+        category: 'data_protection',
+        priority: 'high',
+        reason: 'Required when processing personal data'
+      });
+
+      requirements.push({
+        title: 'Data Processing Records',
+        description: 'Maintain records of processing activities',
+        category: 'data_protection',
+        priority: 'medium',
+        reason: 'GDPR compliance requirement'
+      });
+
+      if (formData.dataTypes.includes('sensitive')) {
+        requirements.push({
+          title: 'Data Protection Impact Assessment',
+          description: 'Conduct DPIA for sensitive data processing',
+          category: 'data_protection',
+          priority: 'high',
+          reason: 'Required for sensitive data processing'
+        });
+      }
+    }
+
+    // Website and online business requirements
+    if (formData.hasWebsite === 'yes') {
+      requirements.push({
+        title: 'Cookie Consent Policy',
+        description: 'Implement cookie consent management',
+        category: 'data_protection',
+        priority: 'medium',
+        reason: 'Required for websites using cookies'
+      });
+
+      requirements.push({
+        title: 'Terms of Service',
+        description: 'Create terms of service for your website',
+        category: 'contracts',
+        priority: 'medium',
+        reason: 'Recommended for all websites'
+      });
+    }
+
+    if (formData.hasOnlinePayments === 'yes') {
+      requirements.push({
+        title: 'PCI DSS Compliance',
+        description: 'Ensure payment card data security standards',
+        category: 'data_protection',
+        priority: 'high',
+        reason: 'Required for online payment processing'
+      });
+    }
+
+    // Industry-specific requirements
+    if (formData.industry === 'healthcare') {
+      requirements.push({
+        title: 'Medical Device Registration',
+        description: 'Register medical devices with MHRA',
+        category: 'compliance',
+        priority: 'critical',
+        reason: 'Required for healthcare businesses'
+      });
+    }
+
+    if (formData.industry === 'finance') {
+      requirements.push({
+        title: 'FCA Authorization',
+        description: 'Obtain Financial Conduct Authority authorization',
+        category: 'compliance',
+        priority: 'critical',
+        reason: 'Required for financial services'
+      });
+    }
+
+    return requirements;
+  };
+
+  const handleNext = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleFinish = () => {
+    const requirements = generateRequirements();
+    onAddRequirements(requirements);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Legal Requirements Wizard</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-200 text-xl">&times;</button>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center space-x-4">
+              {steps.map((step, idx) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    currentStep >= step.id ? 'bg-white text-purple-600' : 'bg-purple-500 text-white'
+                  }`}>
+                    {currentStep > step.id ? <CheckCircleIcon className="w-5 h-5" /> : step.id}
+          </div>
+                  {idx < steps.length - 1 && (
+                    <div className={`w-12 h-0.5 ml-2 ${currentStep > step.id ? 'bg-white' : 'bg-purple-400'}`} />
+                  )}
+        </div>
+              ))}
+      </div>
+            <p className="text-purple-100 text-sm mt-2">{steps[currentStep - 1]?.description}</p>
+                    </div>
+                  </div>
+
+        <div className="p-6">
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900">Company Basics</h3>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company size</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {['1-10 employees', '11-50 employees', '51-250 employees', '250+ employees'].map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setFormData({...formData, companySize: size})}
+                      className={`p-3 text-left border rounded-lg ${
+                        formData.companySize === size ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-sm font-medium">{size}</span>
+                    </button>
+                  ))}
+      </div>
+    </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                <select
+                  value={formData.industry}
+                  onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Select industry</option>
+                  <option value="technology">Technology</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="finance">Financial Services</option>
+                  <option value="retail">Retail</option>
+                  <option value="manufacturing">Manufacturing</option>
+                  <option value="education">Education</option>
+                  <option value="consulting">Consulting</option>
+                  <option value="other">Other</option>
+                </select>
+        </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Primary business location</label>
+                <select
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Select location</option>
+                  <option value="uk">United Kingdom</option>
+                  <option value="eu">European Union</option>
+                  <option value="us">United States</option>
+                  <option value="global">Global/Multiple locations</option>
+                </select>
+      </div>
+    </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900">Business Operations</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Do you have employees?</label>
+                <div className="flex space-x-4">
+                  {['yes', 'no'].map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setFormData({...formData, hasEmployees: option})}
+                      className={`px-4 py-2 border rounded-lg ${
+                        formData.hasEmployees === option ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {option === 'yes' ? 'Yes' : 'No'}
+        </button>
+                  ))}
+      </div>
+    </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Annual revenue (£)</label>
+                <select
+                  value={formData.revenue}
+                  onChange={(e) => setFormData({...formData, revenue: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Select revenue range</option>
+                  <option value="0">£0 - £10,000</option>
+                  <option value="10000">£10,000 - £50,000</option>
+                  <option value="50000">£50,000 - £85,000</option>
+                  <option value="85000">£85,000 - £250,000</option>
+                  <option value="250000">£250,000+</option>
+                </select>
+        </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Do you have a website?</label>
+                <div className="flex space-x-4">
+                  {['yes', 'no'].map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setFormData({...formData, hasWebsite: option})}
+                      className={`px-4 py-2 border rounded-lg ${
+                        formData.hasWebsite === option ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {option === 'yes' ? 'Yes' : 'No'}
+          </button>
+                  ))}
+        </div>
+      </div>
+
+    <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Do you process online payments?</label>
+                <div className="flex space-x-4">
+                  {['yes', 'no'].map((option) => (
+        <button
+                      key={option}
+                      onClick={() => setFormData({...formData, hasOnlinePayments: option})}
+                      className={`px-4 py-2 border rounded-lg ${
+                        formData.hasOnlinePayments === option ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {option === 'yes' ? 'Yes' : 'No'}
+        </button>
+                  ))}
+      </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900">Data & Privacy</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Do you collect or process personal data?</label>
+                <div className="flex space-x-4">
+                  {['yes', 'no'].map((option) => (
+            <button
+                      key={option}
+                      onClick={() => setFormData({...formData, processesData: option})}
+                      className={`px-4 py-2 border rounded-lg ${
+                        formData.processesData === option ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {option === 'yes' ? 'Yes' : 'No'}
+            </button>
+                  ))}
+                </div>
+              </div>
+
+              {formData.processesData === 'yes' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">What types of data do you handle?</label>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'basic', label: 'Basic personal data (names, emails, addresses)' },
+                      { id: 'sensitive', label: 'Sensitive data (health, financial, legal)' },
+                      { id: 'children', label: 'Children\'s data (under 16)' },
+                      { id: 'international', label: 'International data transfers' }
+                    ].map((type) => (
+                      <label key={type.id} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.dataTypes.includes(type.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({...formData, dataTypes: [...formData.dataTypes, type.id]});
+                            } else {
+                              setFormData({...formData, dataTypes: formData.dataTypes.filter(t => t !== type.id)});
+                            }
+                          }}
+                          className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm text-gray-700">{type.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900">Your Legal Requirements</h3>
+              <p className="text-gray-600">Based on your answers, here are the legal requirements that apply to your business:</p>
+              
+              <div className="space-y-3">
+                {generateRequirements().map((req, idx) => (
+                  <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{req.title}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{req.description}</p>
+                        <div className="flex items-center mt-2 space-x-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            req.priority === 'critical' ? 'bg-red-100 text-red-800' :
+                            req.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {req.priority}
+                          </span>
+                          <span className="text-xs text-gray-500">{req.reason}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-between">
+            <button
+            onClick={handlePrevious}
+            disabled={currentStep === 1}
+            className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium ${
+              currentStep === 1 
+                ? 'text-gray-400 cursor-not-allowed' 
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <ArrowLeftIcon className="w-4 h-4 mr-2" />
+            Previous
+            </button>
+
+          {currentStep < 4 ? (
+            <button
+              onClick={handleNext}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+            >
+              Next
+              <ArrowRightIcon className="w-4 h-4 ml-2" />
+            </button>
+          ) : (
+            <button
+              onClick={handleFinish}
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+            >
+              Add Requirements
+              <CheckCircleIcon className="w-4 h-4 ml-2" />
+            </button>
           )}
         </div>
       </div>
@@ -226,498 +750,442 @@ const SideInfoModal = ({ isOpen, onClose }) => {
 };
 
 export default function LegalRequirements() {
-  const [activeTab, setActiveTab] = useState('directory');
-  const [detailActiveTab, setDetailActiveTab] = useState('overview');
-  const [search, setSearch] = useState('');
-  const [region, setRegion] = useState('');
-  const [type, setType] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [status, setStatus] = useState('');
-  const [showChecker, setShowChecker] = useState(false);
-  const [showDetail, setShowDetail] = useState(null);
-  const [showInfoModal, setShowInfoModal] = useState(false);
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('requirements');
+  const [requirements, setRequirements] = useState([
+    {
+      id: 1,
+      title: 'GDPR Compliance Audit',
+      description: 'Complete review of data processing activities and privacy policies',
+      category: 'data_protection',
+      priority: 'high',
+      status: 'in_progress',
+      dueDate: '2024-02-15',
+      assignedTo: 'Legal Team',
+      notes: 'Waiting for vendor data processing agreements'
+    },
+    {
+      id: 2,
+      title: 'Employment Handbook Update',
+      description: 'Update employee handbook with new remote work policies',
+      category: 'employment',
+      priority: 'medium',
+      status: 'not_started',
+      dueDate: '2024-03-01',
+      assignedTo: 'HR Manager',
+      notes: ''
+    },
+    {
+      id: 3,
+      title: 'Annual Confirmation Statement',
+      description: 'File annual confirmation statement with Companies House',
+      category: 'compliance',
+      priority: 'critical',
+      status: 'overdue',
+      dueDate: '2024-01-15',
+      assignedTo: 'Finance Team',
+      notes: 'Due date passed - immediate action required'
+    }
+  ]);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [showModal, setShowModal] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+  const [editingRequirement, setEditingRequirement] = useState(null);
 
-  const filteredLaws = LAWS.filter(law => {
-    const matchesSearch = !search || 
-      law.law.toLowerCase().includes(search.toLowerCase()) ||
-      law.summary.toLowerCase().includes(search.toLowerCase());
-    const matchesRegion = !region || law.region === region;
-    const matchesType = !type || law.type === type;
-    const matchesIndustry = !industry || law.industry === industry;
-    const matchesStatus = !status || law.status === status;
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircleIcon className="w-4 h-4 text-green-600" />;
+      case 'in_progress':
+        return <ClockIcon className="w-4 h-4 text-blue-600" />;
+      case 'overdue':
+        return <ExclamationTriangleIcon className="w-4 h-4 text-red-600" />;
+      case 'review':
+        return <DocumentTextIcon className="w-4 h-4 text-purple-600" />;
+      default:
+        return <XCircleIcon className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      completed: 'bg-green-100 text-green-800',
+      in_progress: 'bg-blue-100 text-blue-800',
+      overdue: 'bg-red-100 text-red-800',
+      review: 'bg-purple-100 text-purple-800',
+      not_started: 'bg-gray-100 text-gray-800'
+    };
     
-    return matchesSearch && matchesRegion && matchesType && matchesIndustry && matchesStatus;
+    const labels = {
+      completed: 'Completed',
+      in_progress: 'In Progress',
+      overdue: 'Overdue',
+      review: 'Under Review',
+      not_started: 'Not Started'
+    };
+
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
+        {labels[status]}
+      </span>
+    );
+  };
+
+  const getPriorityBadge = (priority) => {
+    const styles = {
+      critical: 'bg-red-100 text-red-800',
+      high: 'bg-orange-100 text-orange-800',
+      medium: 'bg-yellow-100 text-yellow-800',
+      low: 'bg-gray-100 text-gray-800'
+    };
+
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${styles[priority]}`}>
+        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+      </span>
+    );
+  };
+
+  const getCategoryIcon = (category) => {
+    const icons = {
+      data_protection: ShieldCheckIcon,
+      employment: UserGroupIcon,
+      corporate: BuildingOfficeIcon,
+      compliance: DocumentTextIcon,
+      intellectual_property: GlobeAltIcon,
+      contracts: DocumentTextIcon,
+      insurance: ShieldCheckIcon,
+      tax: DocumentTextIcon
+    };
+    
+    const Icon = icons[category] || DocumentTextIcon;
+    return <Icon className="w-4 h-4" />;
+  };
+
+  const filteredRequirements = requirements.filter(req => {
+    const matchesSearch = req.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         req.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || req.status === filterStatus;
+    const matchesCategory = filterCategory === 'all' || req.category === filterCategory;
+    
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const renderDirectoryTab = () => (
-    <div>
-      {/* Actions Bar - now visually attached to table */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <svg className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              className="w-full pl-10 pr-4 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
-              placeholder="Search laws..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
-            <select className="px-2 py-1 border-b-2 border-transparent focus:outline-none focus:border-purple-500 text-sm" value={region} onChange={e => setRegion(e.target.value)}>
-              <option value="">All Regions</option>
-              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <select className="px-2 py-1 border-b-2 border-transparent focus:outline-none focus:border-purple-500 text-sm" value={type} onChange={e => setType(e.target.value)}>
-              <option value="">All Types</option>
-              {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <select className="px-2 py-1 border-b-2 border-transparent focus:outline-none focus:border-purple-500 text-sm" value={industry} onChange={e => setIndustry(e.target.value)}>
-              <option value="">All Industries</option>
-              {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-            </select>
-            <select className="px-2 py-1 border-b-2 border-transparent focus:outline-none focus:border-purple-500 text-sm" value={status} onChange={e => setStatus(e.target.value)}>
-              <option value="">All Statuses</option>
-              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
-      
-      {/* Table Container - flat, no border/shadow, rounded bottom only */}
-      <div className="bg-white rounded-b-md overflow-visible">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Law</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applies to</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Summary</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredLaws.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-16">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-500 text-sm">No laws found matching your criteria.</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filteredLaws.map(law => (
-                <tr
-                  key={law.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setShowDetail(law)}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{law.law}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{law.region}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{law.appliesTo}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{law.effectiveDate}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{law.summary}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {law.status}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  const handleSaveRequirement = (formData) => {
+    if (editingRequirement) {
+      setRequirements(requirements.map(req => 
+        req.id === editingRequirement.id 
+          ? { ...req, ...formData }
+          : req
+      ));
+    } else {
+      const newRequirement = {
+        id: Date.now(),
+        ...formData
+      };
+      setRequirements([...requirements, newRequirement]);
+    }
+    setEditingRequirement(null);
+  };
 
-  const renderCheckerTab = () => (
-    <div className="bg-white border border-gray-300 rounded-md p-6">
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Smart Eligibility Checker</h3>
-        <p className="text-gray-500 mb-6">Answer a few questions to determine which laws apply to your business.</p>
-        <button
-          className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
-          onClick={() => setShowChecker(true)}
-        >
-          Start Eligibility Check
-        </button>
-      </div>
-    </div>
-  );
+  const handleAddFromChecklist = (checklistItem) => {
+    const newRequirement = {
+      id: Date.now(),
+      ...checklistItem,
+      status: 'not_started',
+      dueDate: '',
+      assignedTo: '',
+      notes: ''
+    };
+    setRequirements([...requirements, newRequirement]);
+  };
 
-  const renderNotificationsTab = () => (
-    <div className="bg-white border border-gray-300 rounded-md p-6">
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.19 4.19A2 2 0 006 3h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Law Updates & Monitoring</h3>
-        <p className="text-gray-500 mb-6">Subscribe to updates and get notified when relevant laws change.</p>
-        <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-          Set Up Notifications
-        </button>
-      </div>
-    </div>
-  );
+  const handleEditRequirement = (requirement) => {
+    setEditingRequirement(requirement);
+    setShowModal(true);
+  };
 
-  const renderExportTab = () => (
-    <div className="bg-white border border-gray-300 rounded-md p-6">
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Export & Documentation</h3>
-        <p className="text-gray-500 mb-6">Export your matched obligations as PDF or CSV for compliance reporting.</p>
-        <div className="flex justify-center space-x-3">
-          <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
-            Export as PDF
-          </button>
-          <button className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors">
-            Export as CSV
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const handleDeleteRequirement = (id) => {
+    setRequirements(requirements.filter(req => req.id !== id));
+  };
+
+  const getOverviewStats = () => {
+    const total = requirements.length;
+    const completed = requirements.filter(r => r.status === 'completed').length;
+    const overdue = requirements.filter(r => r.status === 'overdue').length;
+    const inProgress = requirements.filter(r => r.status === 'in_progress').length;
+
+    return { total, completed, overdue, inProgress };
+  };
+
+  const stats = getOverviewStats();
+
+  const handleAddRequirementsFromWizard = (wizardRequirements) => {
+    const newRequirements = wizardRequirements.map(req => ({
+      id: Date.now() + Math.random(),
+      ...req,
+      status: 'not_started',
+      dueDate: '',
+      assignedTo: '',
+      notes: req.reason || ''
+    }));
+    setRequirements([...requirements, ...newRequirements]);
+  };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2 mt-2">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Legal Requirements</h2>
-          <p className="text-gray-600 text-sm mb-2">Browse and track legal requirements for your business.</p>
-        </div>
-        <button
-          onClick={() => setShowInfoModal(true)}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
-        >
-          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
-          Help
-        </button>
-      </div>
-      <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-4">
-            <button
-              onClick={() => setActiveTab('directory')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'directory'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Law Directory
-            </button>
-            <button
-              onClick={() => setActiveTab('checker')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'checker'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Eligibility Checker
-            </button>
-            <button
-              onClick={() => setActiveTab('notifications')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'notifications'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Notifications
-            </button>
-            <button
-              onClick={() => setActiveTab('export')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'export'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Export
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {activeTab === 'directory' && renderDirectoryTab()}
-      {activeTab === 'checker' && renderCheckerTab()}
-      {activeTab === 'notifications' && renderNotificationsTab()}
-      {activeTab === 'export' && renderExportTab()}
-
-      {showChecker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl relative">
-            <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl" onClick={() => setShowChecker(false)}>&times;</button>
-            <h2 className="text-2xl font-bold mb-4">Smart Eligibility Checker</h2>
             <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">What industry is your business in?</label>
-                <select className="w-full border px-3 py-2 rounded">
-                  <option>Select industry...</option>
-                  <option>Technology</option>
-                  <option>Healthcare</option>
-                  <option>Finance</option>
-                  <option>Retail</option>
-                  <option>Other</option>
-                </select>
+          <h2 className="text-xl font-semibold text-gray-900">Legal Requirements</h2>
+          <p className="text-gray-600 text-sm">Manage compliance requirements and legal obligations</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Where do you operate?</label>
-                <select className="w-full border px-3 py-2 rounded">
-                  <option>Select regions...</option>
-                  <option>EU</option>
-                  <option>US</option>
-                  <option>UK</option>
-                  <option>Global</option>
-                </select>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowWizard(true)}
+            className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
+          >
+            <QuestionMarkCircleIcon className="w-4 h-4 mr-1.5" />
+            Requirements Wizard
+          </button>
+          <button
+            onClick={() => {
+              setEditingRequirement(null);
+              setShowModal(true);
+            }}
+            className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
+          >
+            <PlusIcon className="w-4 h-4 mr-1.5" />
+            Add Requirement
+          </button>
               </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <DocumentTextIcon className="w-6 h-6 text-gray-600 mr-3" />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Do you process personal data?</label>
-                <div className="space-x-4">
-                  <label className="inline-flex items-center">
-                    <input type="radio" name="data" className="mr-2" />
-                    Yes
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input type="radio" name="data" className="mr-2" />
-                    No
-                  </label>
+              <p className="text-xs font-medium text-gray-500">Total</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.total}</p>
                 </div>
               </div>
             </div>
-            <div className="flex justify-end mt-6 space-x-3">
-              <button className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50" onClick={() => setShowChecker(false)}>Cancel</button>
-              <button className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Check Eligibility</button>
+        
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <CheckCircleIcon className="w-6 h-6 text-green-600 mr-3" />
+            <div>
+              <p className="text-xs font-medium text-gray-500">Completed</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.completed}</p>
             </div>
           </div>
         </div>
-      )}
-
-      {showDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowDetail(null)}>
-          <div
-            className="absolute top-0 right-0 h-full w-11/12 max-w-2xl bg-white shadow-2xl flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Law Details</h3>
-                <button
-                  onClick={() => setShowDetail(null)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                >
-                  &times;
-                </button>
+        
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <ClockIcon className="w-6 h-6 text-blue-600 mr-3" />
+            <div>
+              <p className="text-xs font-medium text-gray-500">In Progress</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.inProgress}</p>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="h-16 w-16 rounded-full bg-purple-100 flex items-center justify-center">
-                  <svg className="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold text-gray-900">{showDetail.law}</h2>
-                  <p className="text-sm text-gray-600">{showDetail.region} • {showDetail.effectiveDate}</p>
-                  <p className="text-sm text-gray-500">{showDetail.type} • {showDetail.industry}</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="w-6 h-6 text-red-600 mr-3" />
+            <div>
+              <p className="text-xs font-medium text-gray-500">Overdue</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.overdue}</p>
+            </div>
                 </div>
               </div>
             </div>
 
+      {/* Tabs */}
             <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6">
+        <nav className="-mb-px flex space-x-6">
                 <button
-                  onClick={() => setDetailActiveTab('overview')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                    detailActiveTab === 'overview'
+            onClick={() => setActiveTab('requirements')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'requirements'
                       ? 'border-purple-500 text-purple-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Overview</span>
+            My Requirements
                 </button>
                 <button
-                  onClick={() => setDetailActiveTab('obligations')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                    detailActiveTab === 'obligations'
+            onClick={() => setActiveTab('checklist')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'checklist'
                       ? 'border-purple-500 text-purple-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Obligations</span>
-                </button>
-                <button
-                  onClick={() => setDetailActiveTab('resources')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                    detailActiveTab === 'resources'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  <span>Resources</span>
+            Compliance Checklist
                 </button>
               </nav>
             </div>
 
-            <div className="flex-1 p-6 overflow-y-auto">
-              {detailActiveTab === 'overview' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Summary</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-700">{showDetail.summary}</p>
+      {/* Content */}
+      {activeTab === 'requirements' && (
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="bg-white p-3 rounded-lg border border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Search requirements..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                />
                     </div>
+              <div className="flex gap-2">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">All Status</option>
+                  <option value="not_started">Not Started</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="review">Under Review</option>
+                  <option value="completed">Completed</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="compliance">Compliance</option>
+                  <option value="data_protection">Data Protection</option>
+                  <option value="employment">Employment Law</option>
+                  <option value="corporate">Corporate Governance</option>
+                  <option value="intellectual_property">Intellectual Property</option>
+                  <option value="contracts">Contracts</option>
+                  <option value="insurance">Insurance</option>
+                  <option value="tax">Tax & Accounting</option>
+                </select>
+                  </div>
+                      </div>
+                      </div>
+
+          {/* Requirements List */}
+          <div className="space-y-3">
+            {filteredRequirements.length === 0 ? (
+              <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+                <DocumentTextIcon className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-base font-medium text-gray-900 mb-2">No requirements found</h3>
+                <p className="text-gray-600 mb-3 text-sm">
+                  {searchTerm || filterStatus !== 'all' || filterCategory !== 'all' 
+                    ? 'Try adjusting your filters or search terms'
+                    : 'Get started by adding your first legal requirement'
+                  }
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingRequirement(null);
+                    setShowModal(true);
+                  }}
+                  className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
+                >
+                  <PlusIcon className="w-4 h-4 mr-1.5" />
+                  Add Requirement
+                </button>
+                      </div>
+            ) : (
+              filteredRequirements.map((requirement) => (
+                <div key={requirement.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        {getStatusIcon(requirement.status)}
+                        <h3 className="text-base font-medium text-gray-900">{requirement.title}</h3>
+                        {getPriorityBadge(requirement.priority)}
+                      </div>
+                      
+                      <p className="text-gray-600 mb-3 text-sm">{requirement.description}</p>
+                      
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                        <div className="flex items-center space-x-1">
+                          {getCategoryIcon(requirement.category)}
+                          <span className="capitalize text-xs">{requirement.category.replace('_', ' ')}</span>
                   </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Details</h3>
-                    <dl className="space-y-3">
-                      <div className="flex justify-between">
-                        <dt className="text-sm font-medium text-gray-500">Region</dt>
-                        <dd className="text-sm text-gray-900">{showDetail.region}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-sm font-medium text-gray-500">Effective Date</dt>
-                        <dd className="text-sm text-gray-900">{showDetail.effectiveDate}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-sm font-medium text-gray-500">Applies To</dt>
-                        <dd className="text-sm text-gray-900">{showDetail.appliesTo}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-sm font-medium text-gray-500">Industry</dt>
-                        <dd className="text-sm text-gray-900">{showDetail.industry}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-sm font-medium text-gray-500">Law Type</dt>
-                        <dd className="text-sm text-gray-900">{showDetail.type}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-sm font-medium text-gray-500">Status</dt>
-                        <dd>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {showDetail.status}
-                          </span>
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Enforcement</h3>
-                    <p className="text-sm text-gray-700">(Placeholder: e.g. ICO, FTC)</p>
-                  </div>
+                        {requirement.dueDate && (
+                          <div className="flex items-center space-x-1">
+                            <CalendarIcon className="w-4 h-4" />
+                            <span className="text-xs">{new Date(requirement.dueDate).toLocaleDateString()}</span>
                 </div>
               )}
               
-              {detailActiveTab === 'obligations' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900">Key Obligations</h3>
-                  <div className="space-y-3">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-yellow-800 mb-2">Data Protection</h4>
-                      <p className="text-sm text-yellow-700">Implement appropriate technical and organizational measures to ensure data security.</p>
-                    </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-blue-800 mb-2">User Consent</h4>
-                      <p className="text-sm text-blue-700">Obtain clear and informed consent before processing personal data.</p>
-                    </div>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-green-800 mb-2">Transparency</h4>
-                      <p className="text-sm text-green-700">Provide clear information about data processing activities to users.</p>
-                    </div>
-                  </div>
+                        {requirement.assignedTo && (
+                          <div className="flex items-center space-x-1">
+                            <UserGroupIcon className="w-4 h-4" />
+                            <span className="text-xs">{requirement.assignedTo}</span>
                 </div>
               )}
-
-              {detailActiveTab === 'resources' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900">Resources</h3>
-                  <div className="space-y-3">
-                    <a href="#" className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">Full Legislation</h4>
-                          <p className="text-sm text-gray-500">Complete legal text and amendments</p>
-                        </div>
-                        <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
                       </div>
-                    </a>
-                    <a href="#" className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">Official Guidance</h4>
-                          <p className="text-sm text-gray-500">Regulatory guidance and best practices</p>
-                        </div>
-                        <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </div>
-                    </a>
-                    <a href="#" className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">Compliance Checklist</h4>
-                          <p className="text-sm text-gray-500">Step-by-step compliance requirements</p>
-                        </div>
-                        <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </div>
-                    </a>
-                  </div>
+                      
+                      {requirement.notes && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700">
+                          {requirement.notes}
                 </div>
               )}
             </div>
 
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
-              <div className="flex space-x-3">
-                <button className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 text-sm font-medium">
-                  Subscribe to Updates
+                    <div className="flex flex-col items-end space-y-2 ml-4">
+                      {getStatusBadge(requirement.status)}
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditRequirement(requirement)}
+                          className="text-purple-600 hover:text-purple-700 text-xs font-medium"
+                        >
+                          Edit
                 </button>
-                <button className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 text-sm font-medium">
-                  Export Details
+                        <button
+                          onClick={() => handleDeleteRequirement(requirement.id)}
+                          className="text-red-600 hover:text-red-700 text-xs font-medium"
+                        >
+                          Delete
                 </button>
               </div>
             </div>
           </div>
         </div>
+              ))
+            )}
+          </div>
+        </div>
       )}
+
+      {activeTab === 'checklist' && (
+        <ComplianceChecklist onAddRequirement={handleAddFromChecklist} />
+      )}
+
+      {/* Wizards and Modals */}
+      <RequirementsWizard
+        isOpen={showWizard}
+        onClose={() => setShowWizard(false)}
+        onAddRequirements={handleAddRequirementsFromWizard}
+      />
+
+      <RequirementModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        requirement={editingRequirement}
+        onSave={handleSaveRequirement}
+      />
     </div>
   );
 } 

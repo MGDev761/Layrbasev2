@@ -132,7 +132,7 @@ export const budgetService = {
       updateData.budget_amount = amount;
     } else if (dataType === 'forecast') {
       updateData.forecast_amount = amount;
-    } else if (dataType === 'actuals') {
+    } else if (dataType === 'actual' || dataType === 'actuals') {
       updateData.actual_amount = amount;
     }
 
@@ -155,7 +155,7 @@ export const budgetService = {
         month,
         budget_amount: dataType === 'budget' ? amount : 0,
         forecast_amount: dataType === 'forecast' ? amount : 0,
-        actual_amount: dataType === 'actuals' ? amount : 0
+        actual_amount: (dataType === 'actual' || dataType === 'actuals') ? amount : 0
       };
 
       const { data: insertResult, error: insertError } = await supabase
@@ -180,7 +180,7 @@ export const budgetService = {
       month: index + 1,
       budget_amount: dataType === 'budget' ? amount : 0,
       forecast_amount: dataType === 'forecast' ? amount : 0,
-      actual_amount: dataType === 'actuals' ? amount : 0
+      actual_amount: (dataType === 'actual' || dataType === 'actuals') ? amount : 0
     }));
 
     // Delete existing data for this line item and year

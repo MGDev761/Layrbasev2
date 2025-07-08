@@ -4,10 +4,18 @@ import LeaveCalendar from './LeaveCalendar';
 import LeaveRequestsTable from './LeaveRequestsTable';
 import LeaveRequestModal from './LeaveRequestModal';
 import { supabase } from '../../../../lib/supabase';
-import { ChatBubbleLeftRightIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { 
+  CalendarDaysIcon, 
+  ClockIcon, 
+  DocumentCheckIcon, 
+  PlusIcon,
+  ChatBubbleLeftRightIcon,
+  ChartBarIcon,
+  UserGroupIcon
+} from '@heroicons/react/24/outline';
 
 const SideInfoModal = ({ isOpen, onClose }) => {
-  const [tab, setTab] = useState('basics');
+  const [tab, setTab] = useState('ai');
   const [openContent, setOpenContent] = useState({ intro: true, timeoff: false, calendar: false });
   const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
   const [openPlatform, setOpenPlatform] = useState({ request: true, approve: false, balance: false });
@@ -24,22 +32,61 @@ const SideInfoModal = ({ isOpen, onClose }) => {
           </div>
         </div>
         <div className="flex border-b border-gray-200 w-full">
-          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><BookOpenIcon className="w-5 h-5" /> Basics</button>
-          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><Cog6ToothIcon className="w-5 h-5" /> Platform How-To</button>
           <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><ChatBubbleLeftRightIcon className="w-5 h-5" /> AI</button>
+          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><DocumentCheckIcon className="w-5 h-5" /> Basics</button>
+          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}><ChartBarIcon className="w-5 h-5" /> Platform How-To</button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-2">
-          {tab === 'basics' && (<>
-            <div className="bg-gray-50"><button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Overview</span>{openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.intro && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Manage your time off requests, view leave balances, and track team schedules in one place. Request time off, approve team requests, and monitor upcoming holidays.</p></div>)}</div>
-            <div className="bg-gray-50"><button onClick={() => toggleContent('timeoff')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Time Off Requests</span>{openContent.timeoff ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.timeoff && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>Submit time off requests with start and end dates</li><li>Choose from different leave types (holiday, sick, unpaid, etc.)</li><li>Track request status and approval workflow</li></ul></div>)}</div>
-            <div className="bg-gray-50"><button onClick={() => toggleContent('calendar')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Calendar View</span>{openContent.calendar ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openContent.calendar && (<div className="px-6 py-4 text-gray-700 text-sm"><ul className="list-disc pl-5 space-y-2"><li>View upcoming time off across your team</li><li>Navigate between months to see future schedules</li><li>Identify potential conflicts and coverage gaps</li></ul></div>)}</div>
-          </>)}
-          {tab === 'platform' && (<>
-            <div className="bg-gray-50"><button onClick={() => togglePlatform('request')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Requesting Time Off</span>{openPlatform.request ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.request && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Click "Request Time Off" to submit a new request. Select your dates, choose the leave type, and add any notes. Your manager will be notified for approval.</p></div>)}</div>
-            <div className="bg-gray-50"><button onClick={() => togglePlatform('approve')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Approving Requests</span>{openPlatform.approve ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.approve && (<div className="px-6 py-4 text-gray-700 text-sm"><p>As a manager, you can approve or decline team requests. Review the details and consider team coverage before making decisions.</p></div>)}</div>
-            <div className="bg-gray-50"><button onClick={() => togglePlatform('balance')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none"><span className="text-sm">Leave Balances</span>{openPlatform.balance ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}</button>{openPlatform.balance && (<div className="px-6 py-4 text-gray-700 text-sm"><p>Track your remaining leave days for different types. Balances update automatically when requests are approved.</p></div>)}</div>
-          </>)}
-          {tab === 'ai' && (<div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}><div className="flex-1 overflow-y-auto space-y-3 mb-4"><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your HR assistant. I can help you manage time off requests, understand leave policies, and answer questions about the Time Manager.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I request time off?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Click the "Request Time Off" button, select your dates, choose the leave type, and submit. Your manager will review and approve.</div></div><div className="flex justify-end"><div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">What if my request is declined?</div></div><div className="flex justify-start"><div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">You'll receive a notification with the reason. You can submit a new request with different dates or discuss with your manager.</div></div></div><form className="flex items-center gap-2"><input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about time management..." disabled /><button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button></form></div>)}
+          {tab === 'basics' && (
+            <div className="space-y-4 text-sm text-gray-700">
+              <p>Manage your time off requests, view leave balances, and track team schedules in one place.</p>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-purple-900 mb-2">Quick Tips:</h4>
+                <ul className="space-y-1 text-purple-800">
+                  <li>• Submit requests well in advance</li>
+                  <li>• Check team calendar for conflicts</li>
+                  <li>• Monitor your leave balances</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          {tab === 'platform' && (
+            <div className="space-y-4 text-sm text-gray-700">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">Requesting Time Off</h4>
+                <p className="text-blue-800">Click "Request Time Off" to submit a new request. Select your dates, choose the leave type, and add any notes.</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-green-900 mb-2">Approving Requests</h4>
+                <p className="text-green-800">As a manager, review team requests and consider coverage before making decisions.</p>
+              </div>
+            </div>
+          )}
+          {tab === 'ai' && (
+            <div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}>
+              <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">
+                    Hi! I'm your HR assistant. I can help you manage time off requests and answer questions.
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">
+                    How do I request time off?
+                  </div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">
+                    Click the "Request Time Off" button, select your dates, choose the leave type, and submit for approval.
+                  </div>
+                </div>
+              </div>
+              <form className="flex items-center gap-2">
+                <input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about time management..." disabled />
+                <button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -52,10 +99,10 @@ const TimeManagerDashboard = ({ currentUser, currentOrganization }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (!currentUser?.id || !currentOrganization?.organization_id) return;
-    console.log('Looking for employee:', currentUser.id, currentOrganization.organization_id);
     setLoading(true);
     supabase
       .from('employees')
@@ -64,66 +111,154 @@ const TimeManagerDashboard = ({ currentUser, currentOrganization }) => {
       .eq('organization_id', currentOrganization.organization_id)
       .maybeSingle()
       .then(({ data, error }) => {
-        console.log('Employee lookup result:', data, error);
         if (error) setError(error.message || JSON.stringify(error));
         else setEmployeeId(data?.id || null);
       })
       .finally(() => setLoading(false));
   }, [currentUser, currentOrganization]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="text-gray-500">Loading...</div></div>;
+  if (error) return <div className="text-red-500 p-4 bg-red-50 rounded-lg">{error}</div>;
   if (!employeeId) return (
-    <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-md p-6 max-w-lg mx-auto mt-12 flex flex-col items-center">
-      <div className="text-lg font-semibold mb-2">Account not linked as an employee</div>
-      <div className="mb-4 text-blue-800 text-sm text-center">You need to create an employee record for this organization to use the Time Manager.</div>
-      <a href="/hr/employees" className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Go to Employee Section</a>
+    <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl p-8 max-w-lg mx-auto mt-12 text-center">
+      <div className="text-xl font-semibold mb-3">Account Setup Required</div>
+      <div className="mb-6 text-blue-800">You need to create an employee record for this organization to use the Time Manager.</div>
+      <a href="/hr/employees" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+        Go to Employee Section
+      </a>
     </div>
   );
 
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: ChartBarIcon },
+    { id: 'calendar', label: 'Team Calendar', icon: CalendarDaysIcon },
+    { id: 'requests', label: 'All Requests', icon: DocumentCheckIcon }
+  ];
+
   return (
-    <div>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-6">
+      {/* Header with Primary Action */}
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Time Manager</h1>
-          <p className="text-gray-600 mt-1">Request time off, view your leave balances, and manage your schedule.</p>
+          <p className="text-gray-600 mt-1">Manage your time off and view team schedules</p>
         </div>
-        <button
-          onClick={() => setShowHelpModal(true)}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
-        >
-          <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2 text-purple-500" />
-          HR AI Agent
-        </button>
-      </div>
-
-      {/* Top Section: Balances + Leave Requests */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-6 items-stretch">
-        <div className="lg:w-1/3 w-full h-full">
-          <LeaveBalances orgId={currentOrganization.organization_id} userId={employeeId} />
-        </div>
-        <div className="lg:w-2/3 w-full h-full">
-          <LeaveRequestsTable 
-            orgId={currentOrganization.organization_id} 
-            userId={employeeId} 
-            currentUser={currentUser}
-          />
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="inline-flex items-center px-3 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+          >
+            <ChatBubbleLeftRightIcon className="w-4 h-4 mr-2" />
+            Help
+          </button>
+          <button
+            onClick={() => setShowRequestModal(true)}
+            className="inline-flex items-center px-6 py-3 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+          >
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Request Time Off
+          </button>
         </div>
       </div>
 
-      {/* Full-width Upcoming Time Off Calendar */}
-      <div className="mb-6 w-full">
-        <LeaveCalendar 
-          orgId={currentOrganization.organization_id} 
-          currentUser={currentUser}
-          currentEmployeeId={employeeId}
-          onRequestTimeOff={() => setShowRequestModal(true)}
-        />
+      {/* Quick Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <LeaveBalances orgId={currentOrganization.organization_id} userId={employeeId} />
       </div>
 
-      <LeaveRequestModal open={showRequestModal} onClose={() => setShowRequestModal(false)} orgId={currentOrganization.organization_id} userId={employeeId} />
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === tab.id
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <tab.icon className="w-5 h-5" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="mt-6">
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Pending Requests - Top Priority */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <ClockIcon className="w-5 h-5 mr-2 text-orange-500" />
+                  Pending Requests
+                </h3>
+              </div>
+              <LeaveRequestsTable 
+                orgId={currentOrganization.organization_id} 
+                userId={employeeId} 
+                currentUser={currentUser}
+                compact={true}
+              />
+            </div>
+
+            {/* Quick Calendar Preview */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <CalendarDaysIcon className="w-5 h-5 mr-2 text-blue-500" />
+                  This Month's Time Off
+                </h3>
+                <button
+                  onClick={() => setActiveTab('calendar')}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  View Full Calendar →
+                </button>
+              </div>
+              <LeaveCalendar 
+                orgId={currentOrganization.organization_id} 
+                currentUser={currentUser}
+                currentEmployeeId={employeeId}
+                onRequestTimeOff={() => setShowRequestModal(true)}
+                compact={true}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'calendar' && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <LeaveCalendar 
+              orgId={currentOrganization.organization_id} 
+              currentUser={currentUser}
+              currentEmployeeId={employeeId}
+              onRequestTimeOff={() => setShowRequestModal(true)}
+            />
+          </div>
+        )}
+
+        {activeTab === 'requests' && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <LeaveRequestsTable 
+              orgId={currentOrganization.organization_id} 
+              userId={employeeId} 
+              currentUser={currentUser}
+            />
+          </div>
+        )}
+      </div>
+
+      <LeaveRequestModal 
+        open={showRequestModal} 
+        onClose={() => setShowRequestModal(false)} 
+        orgId={currentOrganization.organization_id} 
+        userId={employeeId} 
+      />
       <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );

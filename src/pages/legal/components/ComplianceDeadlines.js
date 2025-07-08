@@ -1,174 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, TrashIcon, MagnifyingGlassIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, MagnifyingGlassIcon, CalendarIcon, ExclamationTriangleIcon, CheckCircleIcon, ClockIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import { getComplianceDeadlines, createComplianceDeadline, updateComplianceDeadline, deleteComplianceDeadline } from '../../../services/legalService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 
-const SideInfoModal = ({ isOpen, onClose }) => {
-  const [tab, setTab] = useState('basics');
-  const [openSections, setOpenSections] = useState({
-    basics: true,
-    platform: false,
-    ai: false
-  });
-  const toggleSection = (key) => setOpenSections(s => ({ ...s, [key]: !s[key] }));
-  const [openContent, setOpenContent] = useState({
-    intro: true,
-    why: false,
-    best: false
-  });
-  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
-  const [openPlatform, setOpenPlatform] = useState({
-    quick: true,
-    tips: false,
-    faq: false
-  });
-  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
-  if (!isOpen) return null;
+const AddDeadlineModal = ({ show, onClose, onSubmit, saving, newDeadline, setNewDeadline }) => {
+  if (!show) return null;
+  
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
-      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white tracking-tight">Compliance Help & Tips</h2>
-            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4">
+        {/* Header */}
+        <div className="px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-xl">
+          <h3 className="text-lg font-semibold text-white">Add Compliance Deadline</h3>
+          <p className="text-purple-100 text-sm mt-1">Track important legal and regulatory deadlines</p>
+        </div>
+        
+        {/* Form */}
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Deadline Name</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                placeholder="e.g., Annual Filing" 
+                value={newDeadline.name} 
+                onChange={e => setNewDeadline(d => ({ ...d, name: e.target.value }))} 
+                required 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                value={newDeadline.category} 
+                onChange={e => setNewDeadline(d => ({ ...d, category: e.target.value }))}
+              >
+                <option value="">Select category</option>
+                <option value="annual_filing">Annual Filing</option>
+                <option value="tax_return">Tax Return</option>
+                <option value="regulatory">Regulatory</option>
+                <option value="contract_renewal">Contract Renewal</option>
+                <option value="insurance">Insurance</option>
+                <option value="general">General</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                type="date" 
+                value={newDeadline.dueDate} 
+                onChange={e => setNewDeadline(d => ({ ...d, dueDate: e.target.value }))} 
+                required 
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                placeholder="Additional details (optional)" 
+                rows={3} 
+                value={newDeadline.description} 
+                onChange={e => setNewDeadline(d => ({ ...d, description: e.target.value }))} 
+              />
+            </div>
           </div>
         </div>
-        <div className="flex border-b border-gray-200 w-full">
-          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <BookOpenIcon className="w-5 h-5" /> Compliance Basics
+        
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
           </button>
-          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <Cog6ToothIcon className="w-5 h-5" /> Platform How-To
+          <button 
+            type="button" 
+            onClick={onSubmit} 
+            disabled={saving} 
+            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Adding...' : 'Add Deadline'}
           </button>
-          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <ChatBubbleLeftRightIcon className="w-5 h-5" /> AI
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6 space-y-2">
-          {tab === 'basics' && (
-            <>
-              {/* Introduction Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Introduction</span>
-                  {openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.intro && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Compliance deadlines are critical dates for legal, regulatory, and business obligations. Staying on top of these deadlines helps your organization avoid penalties and maintain good standing.</p>
-                  </div>
-                )}
-              </div>
-              {/* Why It's Important Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('why')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Why It's Important</span>
-                  {openContent.why ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.why && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Missing deadlines can result in fines, legal action, or loss of business licenses.</li>
-                      <li>Proactive compliance builds trust with stakeholders and regulators.</li>
-                      <li>Good compliance processes reduce business risk and operational surprises.</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-              {/* Best Practice Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('best')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Best Practice</span>
-                  {openContent.best ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.best && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Track all key legal and regulatory deadlines in one place.</li>
-                      <li>Set reminders for upcoming filings and renewals.</li>
-                      <li>Document compliance actions and keep records up to date.</li>
-                      <li>Assign responsibility for each compliance item.</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-          {tab === 'platform' && (
-            <>
-              {/* Quick Start Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('quick')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Quick Start</span>
-                  {openPlatform.quick ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.quick && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Click "Add New Deadline" to create your first compliance item.</li>
-                      <li>Fill in the name, due date, and category.</li>
-                      <li>Save and track your deadlines from the dashboard.</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-              {/* Tips Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('tips')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Tips</span>
-                  {openPlatform.tips ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.tips && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Use the search bar to quickly find deadlines by name or category.</li>
-                      <li>Mark deadlines as complete to keep your dashboard up to date.</li>
-                      <li>Export your deadlines for reporting or sharing with your team.</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-              {/* FAQ Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('faq')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">FAQ</span>
-                  {openPlatform.faq ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.faq && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li><b>Can I edit a deadline after creating it?</b> Yes, click the deadline name to edit details.</li>
-                      <li><b>How do I delete a deadline?</b> Click the trash icon next to the deadline in the list.</li>
-                      <li><b>Can I get reminders?</b> Reminders are coming soon!</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-          {tab === 'ai' && (
-            <div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}>
-              {/* Chat messages */}
-              <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your compliance AI assistant. Ask me anything about deadlines, best practices, or the platform.</div>
-                </div>
-                <div className="flex justify-end">
-                  <div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">How do I add a new compliance deadline?</div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Click "Add New Deadline" and fill in the details. You can set reminders and assign categories too!</div>
-                </div>
-              </div>
-              {/* Input box */}
-              <form className="flex items-center gap-2">
-                <input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Type your question..." disabled />
-                <button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button>
-              </form>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -272,245 +191,252 @@ const ComplianceDeadlines = () => {
     d.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusColor = (status, isOverdue) => {
-    if (isOverdue) return 'bg-red-100 text-red-800';
+  const getStatusBadge = (status, isOverdue) => {
+    if (isOverdue) {
+      return { bg: 'bg-red-100', text: 'text-red-800', icon: ExclamationTriangleIcon };
+    }
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed':
+        return { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircleIcon };
+      case 'pending':
+        return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: ClockIcon };
+      default:
+        return { bg: 'bg-gray-100', text: 'text-gray-800', icon: ClockIcon };
     }
   };
 
-  const getDaysUntilDueText = (daysUntilDue, isOverdue) => {
-    if (isOverdue) return `${Math.abs(daysUntilDue)} days overdue`;
-    if (daysUntilDue === 0) return 'Due today';
-    if (daysUntilDue === 1) return 'Due tomorrow';
-    if (daysUntilDue < 0) return `${Math.abs(daysUntilDue)} days ago`;
-    return `${daysUntilDue} days remaining`;
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'annual_filing':
+      case 'regulatory':
+        return BuildingOfficeIcon;
+      case 'tax_return':
+        return CalendarIcon;
+      default:
+        return CalendarIcon;
+    }
   };
+
+  const getDaysUntilDue = (dueDate) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const formatDaysText = (days) => {
+    if (days < 0) return `${Math.abs(days)} days overdue`;
+    if (days === 0) return 'Due today';
+    if (days === 1) return 'Due tomorrow';
+    return `${days} days remaining`;
+  };
+
+  // Stats calculation
+  const totalDeadlines = deadlines.length;
+  const completedDeadlines = deadlines.filter(d => d.status === 'completed').length;
+  const overdueDeadlines = deadlines.filter(d => getDaysUntilDue(d.due_date) < 0 && d.status !== 'completed').length;
+  const upcomingDeadlines = deadlines.filter(d => {
+    const days = getDaysUntilDue(d.due_date);
+    return days >= 0 && days <= 30 && d.status !== 'completed';
+  }).length;
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Compliance Deadlines</h2>
-          <p className="text-gray-600 text-sm mb-6">Track upcoming legal and regulatory deadlines to stay compliant.</p>
-        </div>
-        <div className="text-center py-20">
-          <p className="text-gray-500">Loading deadlines...</p>
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2 mt-2">
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Compliance Deadlines</h2>
-          <p className="text-gray-600 text-sm mb-2">Track upcoming legal and regulatory deadlines to stay compliant.</p>
+          <h1 className="text-xl font-bold text-gray-900">Compliance Deadlines</h1>
+          <p className="text-sm text-gray-600 mt-1">Track and manage legal and regulatory deadlines</p>
         </div>
         <button
-          onClick={() => setShowInfoModal(true)}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+          onClick={() => setShowAddForm(true)}
+          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
         >
-          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
-          Help
-        </button>
-      </div>
-      <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
-
-      {/* Actions Bar - now visually attached to table */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <MagnifyingGlassIcon className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search deadlines..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
-            />
-          </div>
-        </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {showAddForm ? 'Cancel' : 'Add New Deadline'}
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Add Deadline
         </button>
       </div>
 
-      {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowAddForm(false)} />
-          <div className="relative max-w-xl w-full bg-white rounded-xl shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-              <h3 className="text-lg font-medium text-gray-900">Add New Compliance Deadline</h3>
-              <button onClick={() => setShowAddForm(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <CalendarIcon className="w-5 h-5 text-purple-600" />
+              </div>
             </div>
-            <form onSubmit={handleAddDeadline} className="flex-1 flex flex-col justify-center">
-              <div className="flex-1 px-6 py-8 flex flex-col justify-center">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label htmlFor="deadlineName" className="block text-sm font-medium text-gray-700">Deadline Name *</label>
-                    <input
-                      type="text"
-                      id="deadlineName"
-                      value={newDeadline.name}
-                      onChange={(e) => setNewDeadline({ ...newDeadline, name: e.target.value })}
-                      className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="deadlineCategory" className="block text-sm font-medium text-gray-700">Category</label>
-                    <select
-                      id="deadlineCategory"
-                      value={newDeadline.category}
-                      onChange={(e) => setNewDeadline({ ...newDeadline, category: e.target.value })}
-                      className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                    >
-                      <option value="">Select category</option>
-                      <option value="annual_filing">Annual Filing</option>
-                      <option value="tax_return">Tax Return</option>
-                      <option value="regulatory">Regulatory</option>
-                      <option value="contract_renewal">Contract Renewal</option>
-                      <option value="insurance">Insurance</option>
-                      <option value="general">General</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="mb-6">
-                  <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">Due Date *</label>
-                  <input
-                    type="date"
-                    id="dueDate"
-                    value={newDeadline.dueDate}
-                    onChange={(e) => setNewDeadline({ ...newDeadline, dueDate: e.target.value })}
-                    className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                    required
-                  />
-                </div>
-                <div className="mb-6">
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    id="description"
-                    value={newDeadline.description}
-                    onChange={(e) => setNewDeadline({ ...newDeadline, description: e.target.value })}
-                    rows={3}
-                    className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                    placeholder="Add any additional details about this deadline..."
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50"
-                >
-                  {saving ? 'Adding...' : 'Add Deadline'}
-                </button>
-              </div>
-            </form>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Deadlines</p>
+              <p className="text-2xl font-bold text-gray-900">{totalDeadlines}</p>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Table Container - flat, no border/shadow, rounded bottom only */}
-      <div className="bg-white rounded-b-md overflow-visible">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Deadline
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Due Date
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th scope="col" className="relative px-6 py-3">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredDeadlines.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-16">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-500 text-sm">No deadlines found</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filteredDeadlines.map(deadline => (
-                <tr key={deadline.id} className={deadline.is_overdue ? 'bg-red-50' : ''}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{deadline.name}</div>
-                    {deadline.description && (
-                      <div className="text-sm text-gray-500">{deadline.description}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {new Date(deadline.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {getDaysUntilDueText(deadline.days_until_due, deadline.is_overdue)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <select
-                      value={deadline.status}
-                      onChange={(e) => handleStatusChange(deadline.id, e.target.value)}
-                      className={`text-sm font-medium rounded-full px-2.5 py-0.5 ${getStatusColor(deadline.status, deadline.is_overdue)}`}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="completed">Completed</option>
-                      <option value="overdue">Overdue</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {deadline.category ? deadline.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'General'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleDeleteDeadline(deadline.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Completed</p>
+              <p className="text-2xl font-bold text-gray-900">{completedDeadlines}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <ClockIcon className="w-5 h-5 text-yellow-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Upcoming (30d)</p>
+              <p className="text-2xl font-bold text-gray-900">{upcomingDeadlines}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Overdue</p>
+              <p className="text-2xl font-bold text-gray-900">{overdueDeadlines}</p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Search and Filter */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="relative max-w-md">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search deadlines..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Deadlines Grid */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {filteredDeadlines.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CalendarIcon className="w-6 h-6 text-gray-400" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">No deadlines found</h3>
+            <p className="text-sm text-gray-500 mb-4">Get started by adding your first compliance deadline</p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add First Deadline
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredDeadlines.map(deadline => {
+              const days = getDaysUntilDue(deadline.due_date);
+              const isOverdue = days < 0 && deadline.status !== 'completed';
+              const statusBadge = getStatusBadge(deadline.status, isOverdue);
+              const CategoryIcon = getCategoryIcon(deadline.category);
+              
+              return (
+                <div key={deadline.id} className={`p-4 hover:bg-gray-50 transition-colors ${isOverdue ? 'bg-red-50' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="flex-shrink-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isOverdue ? 'bg-red-100' : 'bg-gray-100'}`}>
+                          <CategoryIcon className={`w-5 h-5 ${isOverdue ? 'text-red-600' : 'text-gray-600'}`} />
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3">
+                          <h3 className="text-sm font-medium text-gray-900 truncate">{deadline.name}</h3>
+                          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
+                            <statusBadge.icon className="w-3 h-3 mr-1" />
+                            {deadline.status === 'completed' ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                          <span>{new Date(deadline.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          <span>•</span>
+                          <span className={isOverdue ? 'text-red-600 font-medium' : ''}>{formatDaysText(days)}</span>
+                          {deadline.category && (
+                            <>
+                              <span>•</span>
+                              <span>{deadline.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            </>
+                          )}
+                        </div>
+                        
+                        {deadline.description && (
+                          <p className="mt-2 text-sm text-gray-600 line-clamp-2">{deadline.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={deadline.status}
+                        onChange={(e) => handleStatusChange(deadline.id, e.target.value)}
+                        className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="overdue">Overdue</option>
+                      </select>
+                      
+                      <button
+                        onClick={() => handleDeleteDeadline(deadline.id)}
+                        className="text-red-600 hover:text-red-900 transition-colors p-1"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <AddDeadlineModal
+        show={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSubmit={handleAddDeadline}
+        saving={saving}
+        newDeadline={newDeadline}
+        setNewDeadline={setNewDeadline}
+      />
     </div>
   );
 };

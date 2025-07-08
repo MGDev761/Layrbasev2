@@ -1,164 +1,130 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, TrashIcon, MagnifyingGlassIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, MagnifyingGlassIcon, ShieldCheckIcon, ExclamationTriangleIcon, ClockIcon, CheckCircleIcon, CurrencyPoundIcon, CalendarIcon, BuildingOfficeIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { getInsurancePolicies, createInsurancePolicy, updateInsurancePolicy, deleteInsurancePolicy } from '../../../services/legalService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 
-const SideInfoModal = ({ isOpen, onClose }) => {
-  const [tab, setTab] = useState('basics');
-  const [openSections, setOpenSections] = useState({
-    basics: true,
-    platform: false,
-    ai: false
-  });
-  const toggleSection = (key) => setOpenSections(s => ({ ...s, [key]: !s[key] }));
-  const [openContent, setOpenContent] = useState({
-    intro: true,
-    why: false,
-    best: false
-  });
-  const toggleContent = (key) => setOpenContent(s => ({ ...s, [key]: !s[key] }));
-  const [openPlatform, setOpenPlatform] = useState({
-    quick: true,
-    tips: false,
-    faq: false
-  });
-  const togglePlatform = (key) => setOpenPlatform(s => ({ ...s, [key]: !s[key] }));
+const AddPolicyModal = ({ show, onClose, onSubmit, saving, newPolicy, setNewPolicy }) => {
+  if (!show) return null;
   
-  if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
-      <div className="fixed top-0 right-0 w-full max-w-xl h-screen bg-white shadow-xl flex flex-col m-0 p-0">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-500 px-6 py-4 m-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white tracking-tight">Insurance Help & Tips</h2>
-            <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4">
+        {/* Header */}
+        <div className="px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-xl">
+          <h3 className="text-lg font-semibold text-white">Add Insurance Policy</h3>
+          <p className="text-purple-100 text-sm mt-1">Add a new insurance policy to track coverage and renewals</p>
+        </div>
+        
+        {/* Form */}
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Policy Name</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                placeholder="e.g., General Liability Insurance" 
+                value={newPolicy.name} 
+                onChange={e => setNewPolicy(p => ({ ...p, name: e.target.value }))} 
+                required 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Insurance Provider</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                placeholder="e.g., Aviva, AXA" 
+                value={newPolicy.provider} 
+                onChange={e => setNewPolicy(p => ({ ...p, provider: e.target.value }))} 
+                required 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Policy Number</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                placeholder="Policy reference number" 
+                value={newPolicy.policyNumber} 
+                onChange={e => setNewPolicy(p => ({ ...p, policyNumber: e.target.value }))} 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Coverage Amount (£)</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                type="number" 
+                placeholder="1000000" 
+                value={newPolicy.coverageAmount} 
+                onChange={e => setNewPolicy(p => ({ ...p, coverageAmount: e.target.value }))} 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Annual Premium (£)</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                type="number" 
+                placeholder="1200" 
+                value={newPolicy.premiumAmount} 
+                onChange={e => setNewPolicy(p => ({ ...p, premiumAmount: e.target.value }))} 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                type="date" 
+                value={newPolicy.effectiveDate} 
+                onChange={e => setNewPolicy(p => ({ ...p, effectiveDate: e.target.value }))} 
+                required 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+              <input 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                type="date" 
+                value={newPolicy.expiryDate} 
+                onChange={e => setNewPolicy(p => ({ ...p, expiryDate: e.target.value }))} 
+                required 
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <textarea 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" 
+                placeholder="Additional details about the policy (optional)" 
+                rows={3} 
+                value={newPolicy.notes} 
+                onChange={e => setNewPolicy(p => ({ ...p, notes: e.target.value }))} 
+              />
+            </div>
           </div>
         </div>
-        <div className="flex border-b border-gray-200 w-full">
-          <button onClick={() => setTab('basics')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='basics' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <BookOpenIcon className="w-5 h-5" /> Insurance Basics
+        
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
           </button>
-          <button onClick={() => setTab('platform')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='platform' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <Cog6ToothIcon className="w-5 h-5" /> Platform How-To
+          <button 
+            type="button" 
+            onClick={onSubmit} 
+            disabled={saving} 
+            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Adding...' : 'Add Policy'}
           </button>
-          <button onClick={() => setTab('ai')} className={`flex-1 px-0 py-4 text-sm font-medium flex items-center justify-center gap-2 transition border-b-2 ${tab==='ai' ? 'border-purple-600 text-purple-700 bg-white' : 'border-transparent text-gray-700 bg-gray-50 hover:bg-gray-100'}`}>
-            <ChatBubbleLeftRightIcon className="w-5 h-5" /> AI
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6 space-y-2">
-          {tab === 'basics' && (
-            <>
-              {/* Introduction Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('intro')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Introduction</span>
-                  {openContent.intro ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.intro && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Insurance management is critical for business risk mitigation. This section helps you understand best practices for managing insurance policies and ensuring adequate coverage.</p>
-                  </div>
-                )}
-              </div>
-              {/* Why It's Important Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('why')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Why It's Important</span>
-                  {openContent.why ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.why && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Protects against financial losses and liabilities</li>
-                      <li>Ensures business continuity during crises</li>
-                      <li>Meets legal and contractual requirements</li>
-                      <li>Builds trust with clients and stakeholders</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-              {/* Best Practice Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => toggleContent('best')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Best Practice</span>
-                  {openContent.best ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openContent.best && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Keep all insurance policies up to date and accessible</li>
-                      <li>Track renewal and expiry dates for each policy</li>
-                      <li>Assign responsibility for insurance management</li>
-                      <li>Review coverage regularly for adequacy and compliance</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-          {tab === 'platform' && (
-            <>
-              {/* Quick Start Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('quick')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Add Insurance Policies</span>
-                  {openPlatform.quick ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.quick && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Add and manage insurance policies in one place. Include policy details, coverage amounts, and important dates for comprehensive tracking.</p>
-                  </div>
-                )}
-              </div>
-              {/* Tips Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('tips')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Search and Filter</span>
-                  {openPlatform.tips ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.tips && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Use search and filters to find policies quickly. Filter by provider, policy type, or status to manage your insurance portfolio efficiently.</p>
-                  </div>
-                )}
-              </div>
-              {/* FAQ Section */}
-              <div className="bg-gray-50">
-                <button onClick={() => togglePlatform('faq')} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-purple-700 bg-gray-50 hover:bg-gray-100 rounded-t focus:outline-none">
-                  <span className="text-sm">Monitor Expiry Dates</span>
-                  {openPlatform.faq ? <ChevronDownIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
-                </button>
-                {openPlatform.faq && (
-                  <div className="px-6 py-4 text-gray-700 text-sm">
-                    <p>Monitor expiry dates to avoid lapses in coverage. Export insurance data for reporting or sharing with your team and insurance providers.</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-          {tab === 'ai' && (
-            <div className="flex flex-col h-full bg-gray-50 rounded p-4" style={{ minHeight: 400 }}>
-              {/* Chat messages */}
-              <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Hi! I'm your insurance management assistant. I can help you understand coverage, manage policies, and answer questions about using this platform.</div>
-                </div>
-                <div className="flex justify-end">
-                  <div className="bg-purple-100 border border-purple-200 rounded-lg px-4 py-2 text-sm text-purple-900 max-w-xs">What types of insurance should a small business have?</div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-800 max-w-xs">Essential insurance for small businesses typically includes: General Liability, Professional Liability, Workers' Compensation, Property Insurance, and Cyber Liability. The specific needs depend on your industry and business activities.</div>
-                </div>
-              </div>
-              {/* Input box */}
-              <form className="flex items-center gap-2">
-                <input type="text" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ask about insurance management..." disabled />
-                <button type="submit" className="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700" disabled>Send</button>
-              </form>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -169,15 +135,15 @@ const RiskInsurance = () => {
   const { currentOrganization } = useAuth();
   const [policies, setPolicies] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newPolicy, setNewPolicy] = useState({ 
-    name: '', 
-    provider: '', 
-    policyNumber: '', 
-    coverageAmount: '', 
-    premiumAmount: '', 
-    effectiveDate: '', 
-    expiryDate: '', 
-    notes: '' 
+  const [newPolicy, setNewPolicy] = useState({
+    name: '',
+    provider: '',
+    policyNumber: '',
+    coverageAmount: '',
+    premiumAmount: '',
+    effectiveDate: '',
+    expiryDate: '',
+    notes: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -283,22 +249,46 @@ const RiskInsurance = () => {
     p.policy_number?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusColor = (status, isExpiringSoon) => {
-    if (isExpiringSoon) return 'bg-orange-100 text-orange-800';
+  const getStatusBadge = (status, isExpiringSoon) => {
+    if (isExpiringSoon) {
+      return { bg: 'bg-orange-100', text: 'text-orange-800', icon: ExclamationTriangleIcon };
+    }
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'expired': return 'bg-red-100 text-red-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active':
+        return { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircleIcon };
+      case 'expired':
+        return { bg: 'bg-red-100', text: 'text-red-800', icon: ClockIcon };
+      case 'cancelled':
+        return { bg: 'bg-gray-100', text: 'text-gray-800', icon: ClockIcon };
+      default:
+        return { bg: 'bg-gray-100', text: 'text-gray-800', icon: ClockIcon };
     }
   };
 
-  const getDaysUntilExpiryText = (daysUntilExpiry, isExpiringSoon) => {
-    if (daysUntilExpiry < 0) return `${Math.abs(daysUntilExpiry)} days expired`;
-    if (daysUntilExpiry === 0) return 'Expires today';
-    if (daysUntilExpiry === 1) return 'Expires tomorrow';
-    if (isExpiringSoon) return `${daysUntilExpiry} days remaining (expiring soon)`;
-    return `${daysUntilExpiry} days remaining`;
+  const getPolicyIcon = (policyName) => {
+    const name = policyName.toLowerCase();
+    if (name.includes('liability') || name.includes('professional')) {
+      return ShieldCheckIcon;
+    }
+    if (name.includes('property') || name.includes('building')) {
+      return BuildingOfficeIcon;
+    }
+    return DocumentTextIcon;
+  };
+
+  const getDaysUntilExpiry = (expiryDate) => {
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const formatDaysText = (days) => {
+    if (days < 0) return `${Math.abs(days)} days expired`;
+    if (days === 0) return 'Expires today';
+    if (days === 1) return 'Expires tomorrow';
+    return `${days} days remaining`;
   };
 
   const formatCurrency = (amount) => {
@@ -309,247 +299,261 @@ const RiskInsurance = () => {
     }).format(amount);
   };
 
+  // Stats calculation
+  const totalPolicies = policies.length;
+  const activePolicies = policies.filter(p => p.status === 'active').length;
+  const expiredPolicies = policies.filter(p => p.status === 'expired').length;
+  const expiringSoonPolicies = policies.filter(p => {
+    const days = getDaysUntilExpiry(p.expiry_date);
+    return days >= 0 && days <= 30 && p.status === 'active';
+  }).length;
+
+  const totalCoverage = policies
+    .filter(p => p.status === 'active' && p.coverage_amount)
+    .reduce((sum, p) => sum + p.coverage_amount, 0);
+
+  const totalPremiums = policies
+    .filter(p => p.status === 'active' && p.premium_amount)
+    .reduce((sum, p) => sum + p.premium_amount, 0);
+
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Risk & Insurance</h2>
-          <p className="text-gray-600 text-sm mb-6">Manage your company's insurance policies and assess business risks.</p>
-        </div>
-        <div className="text-center py-20">
-          <p className="text-gray-500">Loading policies...</p>
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2 mt-2">
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Risk & Insurance</h2>
-          <p className="text-gray-600 text-sm mb-2">Manage your company's insurance policies and assess business risks.</p>
+          <h1 className="text-xl font-bold text-gray-900">Risk & Insurance</h1>
+          <p className="text-sm text-gray-600 mt-1">Manage insurance policies and track coverage</p>
         </div>
         <button
-          onClick={() => setShowInfoModal(true)}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+          onClick={() => setShowAddForm(true)}
+          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
         >
-          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
-          Help
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Add Policy
         </button>
       </div>
-      <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
 
-      {/* Actions Bar - now visually attached to table */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 rounded-t-md px-6 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <MagnifyingGlassIcon className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search policies..."
-              className="w-full pl-10 pr-4 py-2 border-b-2 border-transparent focus:outline-none focus:border-purple-500"
-            />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <ShieldCheckIcon className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Policies</p>
+              <p className="text-2xl font-bold text-gray-900">{totalPolicies}</p>
+            </div>
           </div>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {showAddForm ? 'Cancel' : 'Add New Policy'}
-        </button>
-      </div>
 
-      {showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Add New Insurance Policy</h3>
-          <form onSubmit={handleAddPolicy} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="policyName" className="block text-sm font-medium text-gray-700">Policy Name *</label>
-                <input
-                  type="text"
-                  id="policyName"
-                  value={newPolicy.name}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="provider" className="block text-sm font-medium text-gray-700">Provider *</label>
-                <input
-                  type="text"
-                  id="provider"
-                  value={newPolicy.provider}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, provider: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircleIcon className="w-5 h-5 text-green-600" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="policyNumber" className="block text-sm font-medium text-gray-700">Policy Number</label>
-                <input
-                  type="text"
-                  id="policyNumber"
-                  value={newPolicy.policyNumber}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, policyNumber: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="coverageAmount" className="block text-sm font-medium text-gray-700">Coverage Amount</label>
-                <input
-                  type="number"
-                  id="coverageAmount"
-                  value={newPolicy.coverageAmount}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, coverageAmount: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                  step="0.01"
-                />
-              </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Active Policies</p>
+              <p className="text-2xl font-bold text-gray-900">{activePolicies}</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="premiumAmount" className="block text-sm font-medium text-gray-700">Premium Amount</label>
-                <input
-                  type="number"
-                  id="premiumAmount"
-                  value={newPolicy.premiumAmount}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, premiumAmount: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <label htmlFor="effectiveDate" className="block text-sm font-medium text-gray-700">Effective Date *</label>
-                <input
-                  type="date"
-                  id="effectiveDate"
-                  value={newPolicy.effectiveDate}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, effectiveDate: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700">Expiry Date *</label>
-                <input
-                  type="date"
-                  id="expiryDate"
-                  value={newPolicy.expiryDate}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, expiryDate: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
-              <textarea
-                id="notes"
-                value={newPolicy.notes}
-                onChange={(e) => setNewPolicy({ ...newPolicy, notes: e.target.value })}
-                rows={3}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Add any additional notes about this policy..."
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Adding...' : 'Add Policy'}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
-      )}
 
-      {/* Table Container - flat, no border/shadow, rounded bottom only */}
-      <div className="bg-white rounded-b-md overflow-visible">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coverage</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredPolicies.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-16">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-500 text-sm">No policies found</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filteredPolicies.map(policy => (
-                <tr key={policy.id} className={policy.is_expiring_soon ? 'bg-orange-50' : ''}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{policy.name}</div>
-                    {policy.policy_number && (
-                      <div className="text-sm text-gray-500">#{policy.policy_number}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{policy.provider}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{formatCurrency(policy.coverage_amount)}</div>
-                    {policy.premium_amount && (
-                      <div className="text-sm text-gray-500">Premium: {formatCurrency(policy.premium_amount)}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {new Date(policy.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {getDaysUntilExpiryText(policy.days_until_expiry, policy.is_expiring_soon)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <select
-                      value={policy.status}
-                      onChange={(e) => handleStatusChange(policy.id, e.target.value)}
-                      className={`text-sm font-medium rounded-full px-2.5 py-0.5 ${getStatusColor(policy.status, policy.is_expiring_soon)}`}
-                    >
-                      <option value="active">Active</option>
-                      <option value="expired">Expired</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleDeletePolicy(policy.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Expiring Soon</p>
+              <p className="text-2xl font-bold text-gray-900">{expiringSoonPolicies}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <ShieldCheckIcon className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Coverage</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalCoverage)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <CurrencyPoundIcon className="w-5 h-5 text-yellow-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Annual Premiums</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalPremiums)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <ClockIcon className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Expired</p>
+              <p className="text-2xl font-bold text-gray-900">{expiredPolicies}</p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Search and Filter */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="relative max-w-md">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search policies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Policies Grid */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {filteredPolicies.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldCheckIcon className="w-6 h-6 text-gray-400" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">No policies found</h3>
+            <p className="text-sm text-gray-500 mb-4">Get started by adding your first insurance policy</p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add First Policy
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredPolicies.map(policy => {
+              const days = getDaysUntilExpiry(policy.expiry_date);
+              const isExpiringSoon = days >= 0 && days <= 30 && policy.status === 'active';
+              const statusBadge = getStatusBadge(policy.status, isExpiringSoon);
+              const PolicyIcon = getPolicyIcon(policy.name);
+              
+              return (
+                <div key={policy.id} className={`p-4 hover:bg-gray-50 transition-colors ${isExpiringSoon ? 'bg-orange-50' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="flex-shrink-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isExpiringSoon ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                          <PolicyIcon className={`w-5 h-5 ${isExpiringSoon ? 'text-orange-600' : 'text-gray-600'}`} />
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3">
+                          <h3 className="text-sm font-medium text-gray-900 truncate">{policy.name}</h3>
+                          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
+                            <statusBadge.icon className="w-3 h-3 mr-1" />
+                            {policy.status === 'active' ? 'Active' : policy.status === 'expired' ? 'Expired' : 'Cancelled'}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                          <span>{policy.provider}</span>
+                          {policy.policy_number && (
+                            <>
+                              <span>•</span>
+                              <span>#{policy.policy_number}</span>
+                            </>
+                          )}
+                          <span>•</span>
+                          <span>{new Date(policy.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          <span>•</span>
+                          <span className={isExpiringSoon ? 'text-orange-600 font-medium' : ''}>{formatDaysText(days)}</span>
+                        </div>
+                        
+                        <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
+                          {policy.coverage_amount && (
+                            <span>Coverage: {formatCurrency(policy.coverage_amount)}</span>
+                          )}
+                          {policy.premium_amount && (
+                            <>
+                              <span>•</span>
+                              <span>Premium: {formatCurrency(policy.premium_amount)}</span>
+                            </>
+                          )}
+                        </div>
+                        
+                        {policy.notes && (
+                          <p className="mt-2 text-sm text-gray-600 line-clamp-2">{policy.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={policy.status}
+                        onChange={(e) => handleStatusChange(policy.id, e.target.value)}
+                        className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      >
+                        <option value="active">Active</option>
+                        <option value="expired">Expired</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                      
+                      <button
+                        onClick={() => handleDeletePolicy(policy.id)}
+                        className="text-red-600 hover:text-red-900 transition-colors p-1"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <AddPolicyModal
+        show={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSubmit={handleAddPolicy}
+        saving={saving}
+        newPolicy={newPolicy}
+        setNewPolicy={setNewPolicy}
+      />
     </div>
   );
 };

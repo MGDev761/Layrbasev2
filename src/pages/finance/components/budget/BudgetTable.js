@@ -82,7 +82,7 @@ const BudgetTable = ({
             const data = showBudgetComparison ? groupedComparisonDataFallback()[key] || { items: [] } : groupedBudgetData[key] || { items: [] };
             return (
               <React.Fragment key={cat.name}>
-                <tr className="bg-green-25 hover:bg-green-100 border-b border-green-50">
+                <tr className="border-b border-green-50" style={{ backgroundColor: '#fafffe' }}>
                   <td className="px-3 py-2 whitespace-nowrap border-r border-gray-300 relative">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center pl-6">
@@ -225,7 +225,7 @@ const BudgetTable = ({
             const data = showBudgetComparison ? groupedComparisonDataFallback()[key] || { items: [] } : groupedBudgetData[key] || { items: [] };
             return (
               <React.Fragment key={cat.name}>
-                <tr className="bg-red-25 hover:bg-red-100 border-b border-red-50">
+                <tr className="border-b border-red-50" style={{ backgroundColor: '#fffaf0' }}>
                   <td className="px-3 py-2 whitespace-nowrap border-r border-gray-300 relative">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center pl-6">

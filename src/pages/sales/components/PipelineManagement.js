@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, CurrencyDollarIcon, CalendarIcon, PencilIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid';
+import { 
+  PlusIcon, 
+  CurrencyDollarIcon, 
+  CalendarIcon, 
+  PencilIcon, 
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  BuildingOfficeIcon,
+  UserIcon,
+  ClockIcon,
+  ArrowTrendingUpIcon,
+  EyeIcon
+} from '@heroicons/react/20/solid';
 import { InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { getCrmDeals, createCrmDeal, updateCrmDeal, deleteCrmDeal, getCrmCompanies } from '../../../services/salesService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const STAGES = [
-  { id: 'lead', name: 'Lead', color: 'bg-gray-200' },
-  { id: 'qualified', name: 'Qualified', color: 'bg-blue-200' },
-  { id: 'proposal', name: 'Proposal', color: 'bg-yellow-200' },
-  { id: 'negotiation', name: 'Negotiation', color: 'bg-orange-200' },
-  { id: 'closed', name: 'Closed', color: 'bg-green-200' },
+  { id: 'lead', name: 'Lead', color: 'bg-blue-500', lightColor: 'bg-blue-50', textColor: 'text-blue-700' },
+  { id: 'qualified', name: 'Qualified', color: 'bg-indigo-500', lightColor: 'bg-indigo-50', textColor: 'text-indigo-700' },
+  { id: 'proposal', name: 'Proposal', color: 'bg-yellow-500', lightColor: 'bg-yellow-50', textColor: 'text-yellow-700' },
+  { id: 'negotiation', name: 'Negotiation', color: 'bg-orange-500', lightColor: 'bg-orange-50', textColor: 'text-orange-700' },
+  { id: 'closed', name: 'Closed', color: 'bg-green-500', lightColor: 'bg-green-50', textColor: 'text-green-700' },
 ];
 
 // Help Modal Component
@@ -66,26 +78,56 @@ const PipelineManagement = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dealOwnerFilter, setDealOwnerFilter] = useState('all');
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const emptyDeal = { name: '', value: '', stage: 'lead', close_date: '', notes: '', company_id: '' };
 
   useEffect(() => {
     if (!orgId) return;
+    loadData();
+  }, [orgId]);
+
+  const loadData = async () => {
     setLoading(true);
-    Promise.all([
-      getCrmDeals(orgId),
-      getCrmCompanies(orgId)
-    ]).then(([dealsRes, companiesRes]) => {
+    try {
+      const [dealsRes, companiesRes] = await Promise.all([
+        getCrmDeals(orgId),
+        getCrmCompanies(orgId)
+      ]);
       setDeals(dealsRes.data || []);
       setCompanies(companiesRes.data || []);
-      setLoading(false);
-    });
-  }, [orgId]);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+    setLoading(false);
+  };
 
   const getStageValue = (stageDeals) => {
     return stageDeals.reduce((total, deal) => {
       const value = parseFloat(deal.value) || 0;
       return total + value;
     }, 0);
+  };
+
+  const getStageData = (stageId) => {
+    const stageDeals = deals.filter(d => d.stage === stageId);
+    return {
+      count: stageDeals.length,
+      value: getStageValue(stageDeals),
+      deals: stageDeals
+    };
+  };
+
+  const getTotalPipelineValue = () => {
+    return deals.reduce((total, deal) => total + (parseFloat(deal.value) || 0), 0);
+  };
+
+  const getFilteredDeals = (stageDeals) => {
+    return stageDeals.filter(deal => {
+      const matchesSearch = searchTerm === '' || 
+        deal.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getCompanyName(deal.company_id).toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Add more filters based on dealOwnerFilter when you have user data
+      return matchesSearch;
+    });
   };
 
   const openEdit = (deal) => {
@@ -100,7 +142,11 @@ const PipelineManagement = ({ onBack }) => {
     });
     setShowModal(true);
   };
-  const closeModal = () => { setShowModal(false); setEditing(null); };
+
+  const closeModal = () => { 
+    setShowModal(false); 
+    setEditing(null); 
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -112,27 +158,27 @@ const PipelineManagement = ({ onBack }) => {
       notes: form.notes,
       company_id: form.company_id || null
     };
-    let error;
-    if (editing && editing.id) {
-      ({ error } = await updateCrmDeal(editing.id, dealData));
-    } else {
-      ({ error } = await createCrmDeal(orgId, dealData));
+    
+    try {
+      let error;
+      if (editing && editing.id) {
+        ({ error } = await updateCrmDeal(editing.id, dealData));
+      } else {
+        ({ error } = await createCrmDeal(orgId, dealData));
+      }
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        alert(error.message || 'Error saving deal');
+        return;
+      }
+      
+      closeModal();
+      loadData();
+    } catch (error) {
+      console.error('Error saving deal:', error);
+      alert('Error saving deal');
     }
-    if (error) {
-      console.error('Supabase error:', error);
-      alert(error.message || 'Error saving deal');
-      return;
-    }
-    closeModal();
-    setLoading(true);
-    Promise.all([
-      getCrmDeals(orgId),
-      getCrmCompanies(orgId)
-    ]).then(([dealsRes, companiesRes]) => {
-      setDeals(dealsRes.data || []);
-      setCompanies(companiesRes.data || []);
-      setLoading(false);
-    });
   };
 
   const getCompanyName = (company_id) => {
@@ -140,179 +186,463 @@ const PipelineManagement = ({ onBack }) => {
     return company ? company.name : '';
   };
 
-  // Drag and drop logic
+  // Enhanced drag and drop logic
   const onDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
     if (!destination) return;
+    
     const dealId = draggableId;
     const sourceStage = source.droppableId;
     const destStage = destination.droppableId;
+    
     if (sourceStage === destStage) return;
+    
     // Find the deal
     const deal = deals.find(d => d.id === dealId);
     if (!deal) return;
+    
+    // Optimistically update local state
+    const updatedDeals = deals.map(d => 
+      d.id === dealId ? { ...d, stage: destStage } : d
+    );
+    setDeals(updatedDeals);
+    
     // Update stage in DB
-    const { error } = await updateCrmDeal(dealId, { stage: destStage });
-    if (error) {
-      alert(error.message || 'Error moving deal');
-      return;
+    try {
+      const { error } = await updateCrmDeal(dealId, { stage: destStage });
+      if (error) {
+        // Revert on error
+        setDeals(deals);
+        alert(error.message || 'Error moving deal');
+      }
+    } catch (error) {
+      // Revert on error
+      setDeals(deals);
+      alert('Error moving deal');
     }
-    // Refresh deals
-    getCrmDeals(orgId).then(({ data }) => setDeals(data || []));
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-96 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">Pipeline</h3>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage your sales pipeline and track deal progress through different stages.
+          <h1 className="text-xl font-bold text-gray-900">Sales Pipeline</h1>
+          <p className="text-sm text-gray-600">
+            Track deals, manage opportunities, and optimize your sales process
           </p>
         </div>
         <button
           onClick={() => setShowHelpModal(true)}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
         >
-          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          <InformationCircleIcon className="w-4 h-4 mr-2 text-purple-500" />
           Help
         </button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex items-center justify-end space-x-4">
-        <div className="relative w-64">
-          <MagnifyingGlassIcon className="absolute h-5 w-5 text-gray-400 left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search deals..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          />
-        </div>
-        <select
-          value={dealOwnerFilter}
-          onChange={(e) => setDealOwnerFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        >
-          <option value="all">All Deal Owners</option>
-          <option value="me">My Deals</option>
-          <option value="team">Team Deals</option>
-        </select>
-        <button 
-          onClick={() => openEdit(null)} 
-          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center space-x-2"
-        >
-          <PlusIcon className="h-4 w-4" />
-          <span>Add Deal</span>
-        </button>
-      </div>
-
-      {/* Pipeline Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {STAGES.map((stage) => {
-          const stageDeals = deals.filter(d => d.stage === stage.id);
-          return (
-            <div key={stage.id} className="bg-white rounded-lg shadow border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-gray-900">{stage.name}</h4>
-                <span className="text-xs text-gray-500">{stageDeals.length}</span>
-              </div>
-              <div className={`w-full h-2 rounded-full ${stage.color} mb-2`} />
-              <p className="text-lg font-semibold text-gray-900">£{getStageValue(stageDeals).toLocaleString()}</p>
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500">Total Pipeline</p>
+              <p className="text-xl font-bold text-gray-900">£{getTotalPipelineValue().toLocaleString()}</p>
             </div>
-          );
-        })}
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <CurrencyDollarIcon className="w-5 h-5 text-purple-600" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center text-xs text-green-600">
+              <ArrowTrendingUpIcon className="w-3 h-3 mr-1" />
+              <span>+12% from last month</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500">Active Deals</p>
+              <p className="text-xl font-bold text-gray-900">{deals.length}</p>
+            </div>
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <EyeIcon className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center text-xs text-gray-500">
+              <span>Across {STAGES.length} stages</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500">Avg Deal Size</p>
+              <p className="text-xl font-bold text-gray-900">
+                £{deals.length > 0 ? Math.round(getTotalPipelineValue() / deals.length).toLocaleString() : 0}
+              </p>
+            </div>
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <ArrowTrendingUpIcon className="w-5 h-5 text-green-600" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center text-xs text-gray-500">
+              <span>Based on active deals</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500">Close Rate</p>
+              <p className="text-xl font-bold text-gray-900">
+                {deals.filter(d => d.stage === 'closed').length > 0 ? 
+                  Math.round((deals.filter(d => d.stage === 'closed').length / deals.length) * 100) : 0}%
+              </p>
+            </div>
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+              <CalendarIcon className="w-5 h-5 text-orange-600" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center text-xs text-gray-500">
+              <span>This quarter</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Kanban Board with Drag and Drop */}
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg border border-gray-200 p-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0 lg:space-x-3">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search deals and companies..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <select
+              value={dealOwnerFilter}
+              onChange={(e) => setDealOwnerFilter(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+            >
+              <option value="all">All Deal Owners</option>
+              <option value="me">My Deals</option>
+              <option value="team">Team Deals</option>
+            </select>
+            <button 
+              onClick={() => openEdit(null)} 
+              className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            >
+              <PlusIcon className="w-4 h-4 mr-1" />
+              Add Deal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Kanban Board with Drag and Drop */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           {STAGES.map((stage) => {
-            const stageDeals = deals.filter(d => d.stage === stage.id);
+            const stageData = getStageData(stage.id);
+            const filteredDeals = getFilteredDeals(stageData.deals);
+            
             return (
-              <Droppable droppableId={stage.id} key={stage.id}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="bg-gray-100 rounded-lg p-4 min-h-[200px]"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-sm font-medium text-gray-900">{stage.name}</h4>
-                      <span className="text-xs text-gray-500">{stageDeals.length}</span>
-                    </div>
-                    <div className="space-y-3">
-                      {stageDeals.map((deal, idx) => (
-                        <Draggable draggableId={deal.id} index={idx} key={deal.id}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="bg-white rounded-lg shadow border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
-                              onClick={() => openEdit(deal)}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <h5 className="text-sm font-medium text-gray-900">{deal.name || deal.title}</h5>
-                                <span className="text-sm font-semibold text-gray-900">£{parseFloat(deal.value || 0).toLocaleString()}</span>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center text-xs text-gray-500">
-                                  <CurrencyDollarIcon className="h-3 w-3 mr-1" />
-                                  {getCompanyName(deal.company_id)}
-                                </div>
-                                <div className="flex items-center text-xs text-gray-500">
-                                  <CalendarIcon className="h-3 w-3 mr-1" />
-                                  Created: {deal.created_at ? deal.created_at.slice(0, 10) : ''}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                      <button onClick={() => openEdit({ stage: stage.id })} className="w-full p-2 text-sm text-gray-500 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:text-gray-700 transition-colors">
-                        + Add Deal
-                      </button>
+              <div key={stage.id} className="flex flex-col">
+                {/* Stage Header */}
+                <div className="bg-white rounded-lg border border-gray-200 p-3 mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-2 h-2 rounded-full ${stage.color}`}></div>
+                      <h3 className="font-semibold text-gray-900 text-sm">{stage.name}</h3>
+                      <span className="bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full">
+                        {filteredDeals.length}
+                      </span>
                     </div>
                   </div>
-                )}
-              </Droppable>
+                  <div className="space-y-1">
+                    <p className="text-base font-bold text-gray-900">
+                      £{stageData.value.toLocaleString()}
+                    </p>
+                    <div className={`w-full h-1.5 rounded-full ${stage.lightColor}`}>
+                      <div 
+                        className={`h-1.5 rounded-full ${stage.color} transition-all duration-300`}
+                        style={{ 
+                          width: `${deals.length > 0 ? (stageData.count / deals.length) * 100 : 0}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Droppable Area */}
+                <Droppable droppableId={stage.id}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`flex-1 rounded-lg p-2 min-h-[300px] transition-all duration-200 ${
+                        snapshot.isDraggingOver 
+                          ? `${stage.lightColor} border-2 border-dashed border-current ${stage.textColor}` 
+                          : 'bg-gray-50 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className="space-y-2">
+                        {filteredDeals.map((deal, idx) => (
+                          <Draggable draggableId={deal.id} index={idx} key={deal.id}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`bg-white rounded-lg border border-gray-200 p-3 cursor-pointer transition-all duration-200 ${
+                                  snapshot.isDragging 
+                                    ? 'shadow-xl transform rotate-3 scale-105' 
+                                    : 'hover:shadow-md hover:border-purple-300'
+                                }`}
+                                onClick={() => openEdit(deal)}
+                              >
+                                <div className="space-y-2">
+                                  {/* Deal Header */}
+                                  <div className="flex items-start justify-between">
+                                    <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
+                                      {deal.name || 'Untitled Deal'}
+                                    </h4>
+                                    <span className="text-sm font-bold text-purple-600 ml-2">
+                                      £{parseFloat(deal.value || 0).toLocaleString()}
+                                    </span>
+                                  </div>
+
+                                  {/* Company Info */}
+                                  {deal.company_id && (
+                                    <div className="flex items-center space-x-1">
+                                      <BuildingOfficeIcon className="w-3 h-3 text-gray-400" />
+                                      <span className="text-xs text-gray-600 truncate">
+                                        {getCompanyName(deal.company_id)}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {/* Timeline */}
+                                  <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <div className="flex items-center space-x-1">
+                                      <ClockIcon className="w-3 h-3" />
+                                      <span>
+                                        {deal.close_date 
+                                          ? new Date(deal.close_date).toLocaleDateString() 
+                                          : 'No close date'
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                        
+                        {/* Add Deal Button */}
+                        <button 
+                          onClick={() => openEdit({ stage: stage.id })} 
+                          className="w-full p-3 text-xs text-gray-500 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 flex items-center justify-center space-x-1"
+                        >
+                          <PlusIcon className="w-3 h-3" />
+                          <span>Add Deal</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
+              </div>
             );
           })}
         </div>
       </DragDropContext>
+
+      {/* Modern Deal Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100">
-            <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
-              <div className="text-lg font-medium text-gray-900">{editing ? 'Edit' : 'Add'} Deal</div>
-              <button type="button" onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                    <CurrencyDollarIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">
+                      {editing ? 'Edit Deal' : 'Create New Deal'}
+                    </h2>
+                    <p className="text-purple-100 text-sm">
+                      {editing ? 'Update deal information and track progress' : 'Add a new opportunity to your pipeline'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="text-white hover:text-gray-200 transition-colors"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
             </div>
-            <div className="space-y-3">
-              <input className="w-full px-3 py-2 border rounded" placeholder="Deal Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
-              <input className="w-full px-3 py-2 border rounded" placeholder="Value (£)" type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} required />
-              <select className="w-full px-3 py-2 border rounded" value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
-                {STAGES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <select className="w-full px-3 py-2 border rounded" value={form.company_id} onChange={e => setForm(f => ({ ...f, company_id: e.target.value }))} required>
-                <option value="">Select Company</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <input className="w-full px-3 py-2 border rounded" type="date" placeholder="Close Date" value={form.close_date} onChange={e => setForm(f => ({ ...f, close_date: e.target.value }))} />
-              <textarea className="w-full px-3 py-2 border rounded" placeholder="Notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-            </div>
-            <div className="flex justify-end space-x-2 mt-8">
-              <button type="button" onClick={closeModal} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Save</button>
-            </div>
-          </form>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+              <div className="flex-1 p-6 overflow-y-auto space-y-6">
+                {/* Deal Information */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <CurrencyDollarIcon className="w-5 h-5 mr-2 text-purple-600" />
+                    Deal Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Deal Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={form.name}
+                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                        placeholder="Enter deal name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Deal Value *
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-gray-500 text-sm">£</span>
+                        </div>
+                        <input
+                          type="number"
+                          value={form.value}
+                          onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
+                          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Pipeline Stage
+                      </label>
+                      <select
+                        value={form.stage}
+                        onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                      >
+                        {STAGES.map(stage => (
+                          <option key={stage.id} value={stage.id}>{stage.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Company *
+                      </label>
+                      <select
+                        value={form.company_id}
+                        onChange={e => setForm(f => ({ ...f, company_id: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                        required
+                      >
+                        <option value="">Select Company</option>
+                        {companies.map(company => (
+                          <option key={company.id} value={company.id}>{company.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Expected Close Date
+                      </label>
+                      <input
+                        type="date"
+                        value={form.close_date}
+                        onChange={e => setForm(f => ({ ...f, close_date: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                    placeholder="Add any additional notes about this deal..."
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors"
+                  >
+                    {editing ? 'Update Deal' : 'Create Deal'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

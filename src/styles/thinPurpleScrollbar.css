@@ -1,0 +1,19 @@
+/* Thin grey scrollbar for modals */
+.thin-purple-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.thin-purple-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thin-purple-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 6px;
+}
+
+.thin-purple-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 6px;
+} 

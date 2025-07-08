@@ -5,7 +5,7 @@ import AddBudgetItemModal from './AddBudgetItemModal';
 import QuickBudgetEditorModal from './QuickBudgetEditorModal';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { budgetService } from '../../../../services/budgetService';
-import { ArrowLeftIcon, PlusIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlusIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, ChevronDownIcon, ChevronRightIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -286,6 +286,11 @@ const Budget = () => {
   };
 
   const handleValueChange = async (lineItemId, month, value, dataType = 'budget') => {
+    // Check if budget is locked and we're trying to edit budget data - if so, just return
+    if (isBudgetLocked && dataType === 'budget') {
+      return;
+    }
+    
     const amount = parseFloat(value) || 0;
     await updateBudgetValue(lineItemId, month, amount, dataType);
   };
@@ -337,7 +342,6 @@ const Budget = () => {
     try {
       await budgetService.lockVersion(currentOrganization.organization_id, selectedYear, 'budget', true);
       setIsBudgetLocked(true);
-      setSuccessMessage('Budget has been locked successfully! You can now create a forecast.');
     } catch (error) {
       console.error('Error locking budget:', error);
       alert('Error locking budget: ' + error.message);
@@ -605,46 +609,55 @@ const Budget = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Step 1: Create Your Budget</h3>
           
           {/* Controls row */}
-          <div className="mb-4 flex items-center gap-2 w-full">
-            <button
-              className="px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
-              onClick={() => {
-                console.log('Add Item Clicked');
-                openAddLineItemModal(null);
-              }}
-            >
-              + Add Item
-            </button>
-            <button
-              className="px-4 py-2 rounded-md bg-gray-500 text-white text-sm font-semibold hover:bg-gray-700"
-              onClick={() => setShowQuickEditor(true)}
-            >
-              Quick Editor
-            </button>
-            <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <button
+                className="px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
+                onClick={() => {
+                  console.log('Add Item Clicked');
+                  openAddLineItemModal(null);
+                }}
+              >
+                + Add Item
+              </button>
+              <button
+                className="px-4 py-2 rounded-md bg-gray-500 text-white text-sm font-semibold hover:bg-gray-700"
+                onClick={() => setShowQuickEditor(true)}
+              >
+                Quick Editor
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-3">
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-4 py-2 rounded-md border border-gray-300 focus:ring-purple-500 focus:border-purple-500 text-sm w-32"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500 bg-white"
               >
                 {years.map(year => (
                   <option key={year} value={year}>{year}</option>
                 ))}
               </select>
-              <div className="flex items-center bg-purple-100 rounded-md p-0.5 shadow-inner">
+              <div className="flex items-center bg-gray-100 rounded-md p-0.5">
                 <button
                   onClick={() => setViewMode('months')}
-                  className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
-                    ${viewMode === 'months' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-all duration-150 ${
+                    viewMode === 'months' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  Months
+                  Monthly
                 </button>
                 <button
                   onClick={() => setViewMode('quarters')}
-                  className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
-                    ${viewMode === 'quarters' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-all duration-150 ${
+                    viewMode === 'quarters' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  Quarters
+                  Quarterly
                 </button>
               </div>
             </div>
@@ -701,7 +714,7 @@ const Budget = () => {
                   const data = groupedBudgetData[key] || { items: [] };
                   return (
                     <React.Fragment key={cat.name}>
-                      <tr className="bg-green-25 hover:bg-green-100 border-b border-green-50">
+                      <tr className="border-b border-green-50" style={{ backgroundColor: '#fafffe' }}>
                         <td className="px-3 py-2 whitespace-nowrap border-r border-gray-300 relative">
                           <div className="flex items-center justify-between w-full">
                             <div className="flex items-center pl-6">
@@ -850,7 +863,7 @@ const Budget = () => {
                   const data = groupedBudgetData[key] || { items: [] };
                   return (
                     <React.Fragment key={cat.name}>
-                      <tr className="bg-red-25 hover:bg-red-100 border-b border-red-50">
+                      <tr className="border-b border-red-50" style={{ backgroundColor: '#fff5f5' }}>
                         <td className="px-3 py-2 whitespace-nowrap border-r border-gray-300 relative">
                           <div className="flex items-center justify-between w-full">
                             <div className="flex items-center pl-6">
@@ -995,7 +1008,7 @@ const Budget = () => {
               onClick={handleLockBudget}
               className="px-6 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm font-medium"
             >
-              Lock Budget & Create Forecast
+              Lock Budget
             </button>
           </div>
         </div>
@@ -1138,7 +1151,6 @@ const Budget = () => {
                 try {
                   await budgetService.lockVersion(currentOrganization.organization_id, selectedYear, 'budget', false);
                   setIsBudgetLocked(false);
-                  setSuccessMessage('Budget has been unlocked. You can now edit the budget.');
                 } catch (err) {
                   alert('Error unlocking budget: ' + (err.message || JSON.stringify(err)));
                 }
@@ -1256,7 +1268,7 @@ const Budget = () => {
                     const data = groupedBudgetData[key] || { items: [] };
                     return (
                       <React.Fragment key={cat.name}>
-                        <tr className="bg-green-25 hover:bg-green-100 border-b border-green-50">
+                        <tr className="border-b border-green-50" style={{ backgroundColor: '#fafffe' }}>
                           <td className="px-3 py-2 whitespace-nowrap border-r border-gray-300 relative">
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center pl-6">
@@ -1405,7 +1417,7 @@ const Budget = () => {
                     const data = groupedBudgetData[key] || { items: [] };
                     return (
                       <React.Fragment key={cat.name}>
-                        <tr className="bg-red-25 hover:bg-red-100 border-b border-red-50">
+                        <tr className="border-b border-red-50" style={{ backgroundColor: '#fff5f5' }}>
                           <td className="px-3 py-2 whitespace-nowrap border-r border-gray-300 relative">
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center pl-6">
@@ -1427,16 +1439,16 @@ const Budget = () => {
                                 ) : (
                                   <span onClick={() => handleCategoryNameClick(cat)} className="cursor-pointer hover:underline font-normal">{cat.name}</span>
                                 )}
-                </div>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); const catObj = cat; openAddLineItemModal(catObj ? { category_id: catObj.id } : null); }}
-                                  className="ml-auto w-6 h-6 flex items-center justify-center text-purple-600 hover:text-purple-800 hover:bg-white rounded"
-                                  tabIndex={-1}
-                                >
-                                  <span className="text-base font-bold leading-none text-purple-600">+</span>
-                                </button>
-              </div>
-                                </td>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); const catObj = cat; openAddLineItemModal(catObj ? { category_id: catObj.id } : null); }}
+                                className="ml-auto w-6 h-6 flex items-center justify-center text-purple-600 hover:text-purple-800 hover:bg-white rounded"
+                                tabIndex={-1}
+                              >
+                                <span className="text-base font-bold leading-none text-purple-600">+</span>
+                              </button>
+                            </div>
+                          </td>
                           {viewMode === 'months' ? (
                             Array(12).fill(0).map((_, i) => {
                               const total = data.items.reduce((sum, item) => sum + Math.abs(item[`month_${i + 1}`] || 0), 0);
@@ -1544,41 +1556,33 @@ const Budget = () => {
               </table>
             </div>
           </>
-        ) : (
-          <>
-            {/* Controls row for forecast */}
+              ) : (
+        <>
+            {/* Controls row */}
             <div className="mb-4 flex items-center gap-2 w-full">
-              <button
-                className="px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
-                onClick={() => {
-                  console.log('Add Item Clicked');
-                  openAddLineItemModal(null);
-                }}
-              >
-                + Add Item
-              </button>
-              <button
-                className="px-4 py-2 rounded-md bg-gray-500 text-white text-sm font-semibold hover:bg-gray-700"
-                onClick={() => setShowQuickEditor(true)}
-              >
-                Quick Editor
-              </button>
+              <div className="flex items-center bg-purple-100 rounded-md p-0.5 shadow-inner">
+                <button
+                  onClick={() => setShowBudgetComparison(false)}
+                  className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none ${
+                    !showBudgetComparison 
+                      ? 'bg-white text-purple-700 shadow z-10' 
+                      : 'bg-transparent text-purple-600'
+                  }`}
+                >
+                  Forecast View
+                </button>
+                <button
+                  onClick={() => setShowBudgetComparison(true)}
+                  className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none ${
+                    showBudgetComparison 
+                      ? 'bg-white text-purple-700 shadow z-10' 
+                      : 'bg-transparent text-purple-600'
+                  }`}
+                >
+                  Variance Analysis
+                </button>
+              </div>
               <div className="ml-auto flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={showBudgetComparison}
-                    onChange={(e) => {
-                      console.log('Comparison checkbox changed:', e.target.checked);
-                      console.log('Current comparisonData:', comparisonData.length, 'items');
-                      console.log('Current comparisonTotals:', comparisonTotals);
-                      console.log('Sample comparisonData item:', comparisonData[0]);
-                      setShowBudgetComparison(e.target.checked);
-                    }}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  Vs Budget
-                </label>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -1591,15 +1595,21 @@ const Budget = () => {
                 <div className="flex items-center bg-purple-100 rounded-md p-0.5 shadow-inner">
                   <button
                     onClick={() => setViewMode('months')}
-                    className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
-                      ${viewMode === 'months' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none ${
+                      viewMode === 'months' 
+                        ? 'bg-white text-purple-700 shadow z-10' 
+                        : 'bg-transparent text-purple-600'
+                    }`}
                   >
                     Months
                   </button>
                   <button
                     onClick={() => setViewMode('quarters')}
-                    className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none
-                      ${viewMode === 'quarters' ? 'bg-white text-purple-700 shadow z-10' : 'bg-transparent text-purple-600'}`}
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 focus:outline-none ${
+                      viewMode === 'quarters' 
+                        ? 'bg-white text-purple-700 shadow z-10' 
+                        : 'bg-transparent text-purple-600'
+                    }`}
                   >
                     Quarters
                   </button>
@@ -1918,6 +1928,7 @@ const Budget = () => {
         loadBudgetData={loadBudgetData}
       />
       <SideInfoModal isOpen={showInfoModal} onClose={() => setShowInfoModal(false)} />
+
       {lockModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-96 border-2 border-purple-200 font-sans">

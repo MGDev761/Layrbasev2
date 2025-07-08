@@ -566,164 +566,256 @@ const FoundationDocuments = () => {
     </div>
   );
 
+  // Organize checklist into categories
+  const categories = [
+    {
+      title: "Company Identity",
+      description: "Basic company information and branding",
+      icon: BuildingOfficeIcon,
+      color: "purple",
+      items: checklist.slice(0, 3) // Company Name, Number, Office
+    },
+    {
+      title: "Legal Foundation", 
+      description: "Core legal documents and agreements",
+      icon: DocumentTextIcon,
+      color: "blue",
+      items: checklist.slice(3, 8) // Articles through NDAs
+    },
+    {
+      title: "Financial Setup",
+      description: "Banking, tax, and insurance requirements", 
+      icon: CheckCircleIcon,
+      color: "green",
+      items: checklist.slice(8, 11) // Bank, VAT, Insurance
+    },
+    {
+      title: "Governance & Structure",
+      description: "Organizational structure and compliance",
+      icon: InformationCircleIcon,
+      color: "amber",
+      items: checklist.slice(11) // Board, Org Chart, Equity, Compliance
+    }
+  ];
+
+  const getColorClasses = (color, variant = 'bg') => {
+    const colors = {
+      purple: {
+        bg: 'bg-purple-100',
+        text: 'text-purple-700',
+        border: 'border-purple-200',
+        ring: 'ring-purple-500',
+        button: 'bg-purple-600 hover:bg-purple-700'
+      },
+      blue: {
+        bg: 'bg-blue-100', 
+        text: 'text-blue-700',
+        border: 'border-blue-200',
+        ring: 'ring-blue-500',
+        button: 'bg-blue-600 hover:bg-blue-700'
+      },
+      green: {
+        bg: 'bg-green-100',
+        text: 'text-green-700', 
+        border: 'border-green-200',
+        ring: 'ring-green-500',
+        button: 'bg-green-600 hover:bg-green-700'
+      },
+      amber: {
+        bg: 'bg-amber-100',
+        text: 'text-amber-700',
+        border: 'border-amber-200', 
+        ring: 'ring-amber-500',
+        button: 'bg-amber-600 hover:bg-amber-700'
+      }
+    };
+    return colors[color] || colors.purple;
+  };
+
   return (
-    <div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Company Foundations</h1>
-          <p className="text-gray-600 text-sm mb-6">Set up your company's legal and operational foundations. Complete the checklist to ensure all key documents and info are in place.</p>
+          <h1 className="text-xl font-bold text-gray-900">Company Foundation</h1>
+          <p className="text-sm text-gray-600 mt-1">Complete your company setup essentials</p>
         </div>
         <button
           onClick={() => setShowHelpModal(true)}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-          style={{ boxShadow: '0 1px 4px 0 rgba(80,80,120,0.06)' }}
+          className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
         >
-          <InformationCircleIcon className="w-5 h-5 mr-2 text-purple-500" />
+          <InformationCircleIcon className="w-4 h-4 mr-2 text-purple-500" />
           Help
         </button>
       </div>
-      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
-      <div className="bg-white rounded-lg">
-        {/* Progress Bar */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Setup Progress</h3>
-            <span className="text-sm font-medium text-gray-600">{progressPercentage}% Complete</span>
-          </div>
-          
-          {/* Overall Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-green-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
+
+      {/* Compact Progress Bar */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-900">Setup Progress</span>
+          <span className="text-sm text-gray-600">{progressPercentage}% complete</span>
         </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
 
-        {/* Wizard Content */}
-        <div className="p-6">
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-blue-800 mb-2">Quick Setup</h3>
-                <p className="text-sm text-blue-700 mb-3">
-                  Click on any step to complete it. Some steps will open forms to collect information.
-                </p>
-                <button
-                  onClick={() => setShowCompanyPopup(true)}
-                  className="text-sm text-blue-600 hover:text-blue-800 underline"
-                >
-                  Start with Company Name →
-                </button>
-              </div>
+      <SideInfoModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
 
-              <div className="space-y-3">
-                {checklist.map((item, index) => (
-                  <div
-                    key={item.step}
-                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
-                      item.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                    }`}
-                    onClick={() => handleStepClick(index)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleComplete(index);
-                        }}
-                        className={`flex-shrink-0 ${
-                          item.completed ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        <CheckCircleIcon className="h-6 w-6" />
-                      </button>
-                      <div>
-                        <h4 className={`text-sm font-medium ${item.completed ? 'text-green-800' : 'text-gray-900'}`}>
-                          {item.step}
-                        </h4>
-                        <p className={`text-sm ${item.completed ? 'text-green-700' : 'text-gray-600'}`}>
-                          {item.description}
-                        </p>
-                      </div>
+      {/* Streamlined Categories */}
+      <div className="space-y-4">
+        {categories.map((category, categoryIndex) => {
+          const categoryCompleted = category.items.filter(item => item.completed).length;
+          const categoryTotal = category.items.length;
+          const categoryProgress = Math.round((categoryCompleted / categoryTotal) * 100);
+          const colors = getColorClasses(category.color);
+
+          return (
+            <div key={category.title} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              {/* Compact Category Header */}
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2 ${colors.button} rounded-md`}>
+                      <category.icon className="w-4 h-4 text-white" />
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {item.hasUpload && (
-                        <button 
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1"
-                        >
-                          <ArrowUpOnSquareIcon className="h-4 w-4" />
-                          <span>Upload</span>
-                        </button>
-                      )}
-                      {item.hasLink && (
-                        <a 
-                          href={item.linkTo} 
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                        >
-                          <LinkIcon className="h-4 w-4" />
-                          <span>{item.linkText}</span>
-                        </a>
-                      )}
-                      {item.popup && (
-                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                          Click to edit
-                        </span>
-                      )}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">{category.title}</h3>
+                      <p className="text-xs text-gray-600">{category.description}</p>
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-center space-x-3">
+                    <span className="text-xs text-gray-500">{categoryCompleted}/{categoryTotal}</span>
+                    <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className={`${colors.button} h-1.5 rounded-full transition-all duration-300`}
+                        style={{ width: `${categoryProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Compact Items Grid */}
+              <div className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {category.items.map((item, itemIndex) => {
+                    const globalIndex = categoryIndex === 0 ? itemIndex : 
+                                     categoryIndex === 1 ? itemIndex + 3 :
+                                     categoryIndex === 2 ? itemIndex + 8 :
+                                     itemIndex + 11;
+                    
+                    return (
+                      <div
+                        key={item.step}
+                        className={`relative p-3 border rounded-lg cursor-pointer transition-all duration-200 group ${
+                          item.completed 
+                            ? 'border-green-200 bg-green-50' 
+                            : 'border-gray-200 bg-white hover:shadow-sm hover:border-purple-300'
+                        }`}
+                        onClick={() => handleStepClick(globalIndex)}
+                      >
+                        {/* Compact Status */}
+                        <div className="absolute top-2 right-2">
+                          {item.completed ? (
+                            <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <div className="w-4 h-4 border border-gray-300 rounded-full group-hover:border-purple-400 transition-colors" />
+                          )}
+                        </div>
+
+                        {/* Compact Content */}
+                        <div className="pr-6">
+                          <h4 className={`font-medium text-sm mb-1 ${item.completed ? 'text-green-900' : 'text-gray-900'}`}>
+                            {item.step}
+                          </h4>
+                          <p className="text-xs text-gray-600 line-clamp-2">
+                            {item.description}
+                          </p>
+                        </div>
+
+                        {/* Compact Action Indicators */}
+                        <div className="flex items-center space-x-1 mt-2">
+                          {item.hasUpload && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                              <ArrowUpOnSquareIcon className="w-3 h-3 mr-0.5" />
+                              Upload
+                            </span>
+                          )}
+                          {item.hasLink && (
+                            <a 
+                              href={item.linkTo} 
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                            >
+                              <LinkIcon className="w-3 h-3 mr-0.5" />
+                              {item.linkText}
+                            </a>
+                          )}
+                          {item.popup && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-600">
+                              ✏️ Edit
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-        </div>
-
-        {/* Modals */}
-        {showCompanyPopup && <CompanyNamePopup 
-          companyName={companyName}
-          setCompanyName={setCompanyName}
-          logoUrl={logoUrl}
-          setLogoUrl={setLogoUrl}
-          fileInputRef={fileInputRef}
-          handleLogoUpload={handleLogoUpload}
-          handleCompanyNameSubmit={handleCompanyNameSubmit}
-          setShowCompanyPopup={setShowCompanyPopup}
-        />}
-        {showCompanyNumberPopup && <CompanyNumberPopup 
-          companyNumber={companyNumber}
-          setCompanyNumber={setCompanyNumber}
-          incorporationDate={incorporationDate}
-          setIncorporationDate={setIncorporationDate}
-          handleCompanyNumberSubmit={handleCompanyNumberSubmit}
-          setShowCompanyNumberPopup={setShowCompanyNumberPopup}
-        />}
-        {showOfficePopup && <OfficePopup 
-          registeredOffice={registeredOffice}
-          setRegisteredOffice={setRegisteredOffice}
-          website={website}
-          setWebsite={setWebsite}
-          contactEmail={contactEmail}
-          setContactEmail={setContactEmail}
-          linkedinProfile={linkedinProfile}
-          setLinkedinProfile={setLinkedinProfile}
-          handleOfficeSubmit={handleOfficeSubmit}
-          setShowOfficePopup={setShowOfficePopup}
-        />}
-        {showBankPopup && <BankPopup 
-          bankProvider={bankProvider}
-          setBankProvider={setBankProvider}
-          bankAccountOpened={bankAccountOpened}
-          setBankAccountOpened={setBankAccountOpened}
-          handleBankSubmit={handleBankSubmit}
-          setShowBankPopup={setShowBankPopup}
-        />}
-        {showVatPopup && <VatPopup 
-          vatNumber={vatNumber}
-          setVatNumber={setVatNumber}
-          handleVatSubmit={handleVatSubmit}
-          setShowVatPopup={setShowVatPopup}
-        />}
+          );
+        })}
       </div>
+
+      {/* Modals */}
+      {showCompanyPopup && <CompanyNamePopup 
+        companyName={companyName}
+        setCompanyName={setCompanyName}
+        logoUrl={logoUrl}
+        setLogoUrl={setLogoUrl}
+        fileInputRef={fileInputRef}
+        handleLogoUpload={handleLogoUpload}
+        handleCompanyNameSubmit={handleCompanyNameSubmit}
+        setShowCompanyPopup={setShowCompanyPopup}
+      />}
+      {showCompanyNumberPopup && <CompanyNumberPopup 
+        companyNumber={companyNumber}
+        setCompanyNumber={setCompanyNumber}
+        incorporationDate={incorporationDate}
+        setIncorporationDate={setIncorporationDate}
+        handleCompanyNumberSubmit={handleCompanyNumberSubmit}
+        setShowCompanyNumberPopup={setShowCompanyNumberPopup}
+      />}
+      {showOfficePopup && <OfficePopup 
+        registeredOffice={registeredOffice}
+        setRegisteredOffice={setRegisteredOffice}
+        website={website}
+        setWebsite={setWebsite}
+        contactEmail={contactEmail}
+        setContactEmail={setContactEmail}
+        linkedinProfile={linkedinProfile}
+        setLinkedinProfile={setLinkedinProfile}
+        handleOfficeSubmit={handleOfficeSubmit}
+        setShowOfficePopup={setShowOfficePopup}
+      />}
+      {showBankPopup && <BankPopup 
+        bankProvider={bankProvider}
+        setBankProvider={setBankProvider}
+        bankAccountOpened={bankAccountOpened}
+        setBankAccountOpened={setBankAccountOpened}
+        handleBankSubmit={handleBankSubmit}
+        setShowBankPopup={setShowBankPopup}
+      />}
+      {showVatPopup && <VatPopup 
+        vatNumber={vatNumber}
+        setVatNumber={setVatNumber}
+        handleVatSubmit={handleVatSubmit}
+        setShowVatPopup={setShowVatPopup}
+      />}
     </div>
   );
 };

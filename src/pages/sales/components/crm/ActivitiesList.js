@@ -112,30 +112,38 @@ export default function ActivitiesList({ onBack }) {
         </table>
       )}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100">
-            <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
-              <div className="text-lg font-medium text-gray-900">{editing ? 'Edit' : 'Add'} Activity</div>
-              <button type="button" onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <form onSubmit={handleSubmit} className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Left info panel */}
+            <div className="w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col justify-center items-center p-8 text-center">
+              <div className="flex flex-col justify-center items-center h-full w-full">
+                <div className="text-xl font-bold text-purple-700 mb-2">{editing ? 'Edit Activity' : 'Add Activity'}</div>
+                <div className="text-sm text-gray-500 mb-4">Log a sales activity for your CRM.</div>
+                <div className="text-xs text-gray-400">Activities help you track tasks, calls, meetings, and reminders.</div>
+              </div>
             </div>
-            <div className="space-y-3">
-              <select className="w-full px-3 py-2 border rounded" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} required>
-                {TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-              <input className="w-full px-3 py-2 border rounded" placeholder="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
-              <textarea className="w-full px-3 py-2 border rounded" placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-              <input className="w-full px-3 py-2 border rounded" type="datetime-local" placeholder="Due Date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
-              <select className="w-full px-3 py-2 border rounded" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} required>
-                {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-              <select className="w-full px-3 py-2 border rounded" value={form.company_id} onChange={e => setForm(f => ({ ...f, company_id: e.target.value }))}>
-                <option value="">No Company</option>
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+            {/* Right form panel */}
+            <div className="w-2/3 p-8 overflow-y-auto max-h-[80vh]">
+              <div className="space-y-4">
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-purple-500 focus:border-purple-500" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} required>
+                  {TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+                <input className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-purple-500 focus:border-purple-500" placeholder="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+                <textarea className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-purple-500 focus:border-purple-500" placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                <input className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-purple-500 focus:border-purple-500" type="datetime-local" placeholder="Due Date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-purple-500 focus:border-purple-500" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} required>
+                  {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-purple-500 focus:border-purple-500" value={form.company_id} onChange={e => setForm(f => ({ ...f, company_id: e.target.value }))}>
+                  <option value="">No Company</option>
+                  {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="flex justify-end space-x-2 mt-8">
-              <button type="button" onClick={closeModal} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded shadow hover:bg-purple-700">Save</button>
+            {/* Sticky footer */}
+            <div className="absolute bottom-0 right-0 left-1/3 bg-white border-t border-gray-200 flex justify-end gap-3 px-8 py-4 rounded-b-2xl z-10">
+              <button type="button" onClick={closeModal} className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-md shadow hover:bg-purple-700">Save</button>
             </div>
           </form>
         </div>
